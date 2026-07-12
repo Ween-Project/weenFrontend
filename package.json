@@ -1,0 +1,37 @@
+{
+  "name": "ween-front-ui",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "cloudinary": "^2.10.0",
+    "next": "14.2.3",
+    "qrcode": "^1.5.4",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-easy-crop": "^6.1.0",
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.17.10",
+    "gsap": "^3.12.5",
+    "lenis": "^1.1.20",
+    "lucide-react": "^0.468.0",
+    "maath": "^0.10.8",
+    "three": "^0.171.0",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.5.2",
+    "postcss": "^8.5.16",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.4.5"
+  }
+}
