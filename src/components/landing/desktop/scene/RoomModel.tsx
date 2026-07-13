@@ -490,3 +490,245 @@ function Ivy() {
   );
 }
 
+function RoomShell() {
+  return (
+    <group>
+      <Box position={[0, -1.12, -0.2]} scale={[4.2, 0.12, 4.8]} color="#8A5B3A" />
+      <Box position={[0, 1.16, -0.2]} scale={[4.2, 0.1, 4.8]} color="#EFE7DC" />
+      <Box position={[0, 0.03, -2.08]} scale={[4.2, 2.38, 0.1]} color={wall} />
+      <Box position={[-2.05, 0.03, -0.22]} scale={[0.1, 2.38, 3.9]} color="#EEE4D8" />
+      <Box position={[2.05, 0.03, -0.22]} scale={[0.1, 2.38, 3.9]} color="#F5EFE7" />
+
+      {Array.from({ length: 9 }, (_, index) => (
+        <Box
+          key={index}
+          position={[-1.8 + index * 0.45, -1.045, 0.18]}
+          scale={[0.02, 0.01, 4.28]}
+          color="#6E4529"
+        />
+      ))}
+
+      <mesh position={[-0.65, 0.2, -2.02]} castShadow receiveShadow>
+        <boxGeometry args={[0.48, 0.62, 0.04]} />
+        <meshStandardMaterial color="#6B4B36" roughness={0.68} />
+      </mesh>
+      <mesh position={[-0.65, 0.2, -1.995]} receiveShadow>
+        <planeGeometry args={[0.38, 0.52]} />
+        <meshStandardMaterial color="#F9F5E7" roughness={0.72} />
+      </mesh>
+    </group>
+  );
+}
+
+function Desk() {
+  return (
+    <group>
+      <Box position={[-0.32, -0.6, 0.05]} scale={[2.1, 0.1, 0.88]} color="#F3EEE6" roughness={0.52} />
+      <Box position={[-0.32, -0.54, 0.5]} scale={[2.04, 0.05, 0.07]} color="#C9A17B" roughness={0.58} />
+      <Box position={[-1.2, -1.04, -0.24]} scale={[0.07, 0.88, 0.07]} color="#B9B2A7" metalness={0.1} roughness={0.45} />
+      <Box position={[0.55, -1.04, -0.24]} scale={[0.07, 0.88, 0.07]} color="#B9B2A7" metalness={0.1} roughness={0.45} />
+      <Box position={[-1.2, -1.04, 0.42]} scale={[0.07, 0.88, 0.07]} color="#B9B2A7" metalness={0.1} roughness={0.45} />
+      <Box position={[0.55, -1.04, 0.42]} scale={[0.07, 0.88, 0.07]} color="#B9B2A7" metalness={0.1} roughness={0.45} />
+    </group>
+  );
+}
+
+function Laptop() {
+  const laptopRef = useRef<THREE.Group>(null);
+  const screenRef = useRef<THREE.MeshStandardMaterial>(null);
+  const [pivotX, pivotY, pivotZ] = LAPTOP_TURN_PIVOT;
+
+  useFrame(({ clock }) => {
+    const progress = useScrollStore.getState().progress;
+    const transform = getLaptopRigTransform(progress);
+
+    if (laptopRef.current) {
+      laptopRef.current.position.set(pivotX, pivotY + transform.lift, pivotZ);
+      laptopRef.current.rotation.y = transform.rotationY;
+    }
+
+    if (screenRef.current) {
+      const approach = smootherstep(remap(progress, 0.56, 0.64));
+      screenRef.current.emissiveIntensity =
+        0.82 - approach * 0.68 + Math.sin(clock.elapsedTime * 1.8) * 0.025;
+    }
+  });
+
+  return (
+    <group ref={laptopRef} position={[...LAPTOP_TURN_PIVOT]}>
+      <group position={[-pivotX, -pivotY, -pivotZ]}>
+      <mesh position={[-0.55, -0.53, 0.04]} castShadow receiveShadow rotation={[0.02, 0, 0]}>
+        <boxGeometry args={[1.34, 0.045, 0.76]} />
+        <meshStandardMaterial color="#CDD3DA" metalness={0.58} roughness={0.28} />
+      </mesh>
+      <mesh position={[-0.55, -0.5, -0.19]} castShadow receiveShadow>
+        <boxGeometry args={[1.14, 0.012, 0.42]} />
+        <meshStandardMaterial color="#AEB7C2" metalness={0.32} roughness={0.38} />
+      </mesh>
+      <mesh position={[-0.55, -0.475, 0.16]} castShadow receiveShadow>
+        <boxGeometry args={[0.32, 0.01, 0.2]} />
+        <meshStandardMaterial color="#B7C0CB" metalness={0.36} roughness={0.4} />
+      </mesh>
+      {Array.from({ length: 4 }, (_, row) =>
+        Array.from({ length: 10 }, (_, col) => (
+          <mesh
+            key={`${row}-${col}`}
+            position={[-1.03 + col * 0.105 + (row % 2) * 0.025, -0.47, -0.08 + row * 0.055]}
+            castShadow
+          >
+            <boxGeometry args={[0.072, 0.009, 0.028]} />
+            <meshStandardMaterial color="#88929F" metalness={0.14} roughness={0.55} />
+          </mesh>
+        ))
+      )}
+
+      <group
+        position={[...LAPTOP_SCREEN.position]}
+        rotation={[...LAPTOP_SCREEN.rotation]}
+      >
+        <mesh castShadow receiveShadow>
+          <boxGeometry args={[LAPTOP_SCREEN.width + 0.13, LAPTOP_SCREEN.height + 0.13, 0.05]} />
+          <meshStandardMaterial color="#182231" metalness={0.22} roughness={0.32} />
+        </mesh>
+        <mesh position={[0, 0, 0.029]} receiveShadow>
+          <planeGeometry args={[LAPTOP_SCREEN.width, LAPTOP_SCREEN.height]} />
+          <meshStandardMaterial
+            ref={screenRef}
+            color="#F8FAFC"
+            emissive="#DFFFEF"
+            emissiveIntensity={0.95}
+            roughness={0.38}
+          />
+        </mesh>
+        <mesh position={[-0.44, 0.25, 0.034]}>
+          <planeGeometry args={[0.16, 0.025]} />
+          <meshBasicMaterial color="#1F2937" />
+        </mesh>
+        <mesh position={[0.4, 0.25, 0.034]}>
+          <planeGeometry args={[0.17, 0.05]} />
+          <meshBasicMaterial color="#4F7DFF" />
+        </mesh>
+        <mesh position={[-0.16, 0.04, 0.035]}>
+          <planeGeometry args={[0.42, 0.08]} />
+          <meshBasicMaterial color="#1F2937" transparent opacity={0.88} />
+        </mesh>
+        <mesh position={[-0.16, -0.07, 0.035]}>
+          <planeGeometry args={[0.34, 0.018]} />
+          <meshBasicMaterial color="#6B7280" transparent opacity={0.55} />
+        </mesh>
+        <mesh position={[0.42, -0.06, 0.035]}>
+          <planeGeometry args={[0.16, 0.16]} />
+          <meshBasicMaterial color="#20BF6B" transparent opacity={0.92} />
+        </mesh>
+        <mesh position={[0, LAPTOP_SCREEN.height / 2 + 0.035, 0.03]}>
+          <sphereGeometry args={[0.018, 16, 16]} />
+          <meshStandardMaterial color="#0F172A" roughness={0.6} />
+        </mesh>
+      </group>
+      </group>
+    </group>
+  );
+}
+
+function CoffeeCup() {
+  return (
+    <group position={[0.32, -0.46, 0.34]}>
+      <mesh castShadow receiveShadow>
+        <cylinderGeometry args={[0.1, 0.09, 0.2, 32]} />
+        <meshStandardMaterial color="#D7B18B" roughness={0.62} />
+      </mesh>
+      <mesh position={[0, 0.104, 0]} receiveShadow>
+        <cylinderGeometry args={[0.083, 0.088, 0.01, 32]} />
+        <meshStandardMaterial color="#3B2115" roughness={0.42} />
+      </mesh>
+      <mesh position={[-0.03, 0.111, 0.025]} rotation={[Math.PI / 2, 0, -0.32]}>
+        <planeGeometry args={[0.07, 0.015]} />
+        <meshBasicMaterial color="#8A5735" transparent opacity={0.55} />
+      </mesh>
+    </group>
+  );
+}
+
+function DeskDetails() {
+  return (
+    <group>
+      <mesh position={[0.68, -0.53, 0.29]} rotation={[0, -0.18, 0]} castShadow receiveShadow>
+        <boxGeometry args={[0.3, 0.014, 0.42]} />
+        <meshStandardMaterial color={paper} roughness={0.92} />
+      </mesh>
+      <CoffeeCup />
+    </group>
+  );
+}
+
+function StickyNotes() {
+  const notes = [
+    [-1.15, 0.7, "#FACC15"],
+    [-0.9, 0.55, "#FDBA74"],
+    [-1.05, 0.3, "#FEF3C7"],
+    [1.4, 0.78, "#FACC15"],
+    [1.2, 0.55, "#FDBA74"]
+  ] as const;
+
+  return (
+    <group position={[0, 0, -1.995]}>
+      {notes.map(([x, y, color]) => (
+        <mesh key={`${x}-${y}`} position={[x, y, 0]} castShadow receiveShadow>
+          <planeGeometry args={[0.18, 0.18]} />
+          <meshStandardMaterial color={color} roughness={0.86} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function WhiteboardModel() {
+  return (
+    <group position={[...WHITEBOARD.position]} rotation={[...WHITEBOARD.rotation]}>
+      <mesh castShadow receiveShadow>
+        <boxGeometry args={[WHITEBOARD.width + 0.09, WHITEBOARD.height + 0.09, 0.035]} />
+        <meshStandardMaterial color={metal} metalness={0.35} roughness={0.25} />
+      </mesh>
+      <mesh position={[0, 0, 0.022]} receiveShadow>
+        <planeGeometry args={[WHITEBOARD.width, WHITEBOARD.height]} />
+        <meshStandardMaterial color="#F9FAFB" roughness={0.45} />
+      </mesh>
+      <mesh position={[0.05, -0.32, 0.04]} castShadow>
+        <boxGeometry args={[0.72, 0.035, 0.035]} />
+        <meshStandardMaterial color="#CBD5E1" metalness={0.45} roughness={0.3} />
+      </mesh>
+    </group>
+  );
+}
+
+function ExteriorFacade() {
+  return (
+    <group>
+      <BrickWall />
+      <Window />
+      <Ivy />
+    </group>
+  );
+}
+
+export function RoomModel() {
+  return (
+    <group>
+      <RoomShell />
+      <Desk />
+      <Laptop />
+      <DeskDetails />
+      <StickyNotes />
+      <WhiteboardModel />
+      <ExteriorFacade />
+      <ContactShadows
+        position={[0, -1.045, -0.15]}
+        opacity={0.3}
+        scale={4.2}
+        blur={2.6}
+        far={2.8}
+        frames={1}
+      />
+    </group>
+  );
+}
