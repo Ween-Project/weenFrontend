@@ -10,6 +10,8 @@ export type Account = {
   isEmailVerified?: boolean;
   isVerified?: boolean;
   weenCoinBalance?: number;
+  profilePhotoUrl?: string;
+  logoUrl?: string;
 };
 
 export type ApiEnvelope<T> = {
@@ -444,5 +446,4 @@ export type ResetPasswordRequest = {
   newPassword: string;
   confirmNewPassword: string;
 };
-
 

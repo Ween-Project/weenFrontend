@@ -13,6 +13,7 @@ type AuthContextValue = {
   login: (input: LoginInput) => Promise<void>;
   register: (input: RegistrationInput) => Promise<void>;
   logout: (reason?: string) => Promise<void>;
+  refresh: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -74,8 +75,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAccount(result.account);
       },
       logout,
+      refresh: loadSession,
     }),
-    [account, isLoading, logout],
+    [account, isLoading, logout, loadSession],
   );
 
   useEffect(() => {
