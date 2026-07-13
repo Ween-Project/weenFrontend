@@ -369,3 +369,204 @@ function EventFeedCard({ event }: { event: EventSummary }) {
   );
 }
 
+function OrganizationDashboard() {
+  const { account } = useAuth();
+  const [events, setEvents] = useState<EventSummary[]>([]);
+  const [isVerified, setIsVerified] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [page, setPage] = useState(0);
+  const [scanEvent, setScanEvent] = useState<EventSummary | null>(null);
+  const pageSize = 5;
+
+  useEffect(() => {
+    async function load() {
+      if (!account?.id) return;
+      setLoading(true);
+      setError("");
+      try {
+        const [eventList, profileDetails] = await Promise.all([
+          organizationsApi.events(),
+          organizationsApi.get(account.id)
+        ]);
+        setEvents(eventList);
+        setIsVerified(profileDetails.isVerified);
+      } catch (err) {
+        setError(errorMessage(err));
+      } finally {
+        setLoading(false);
+      }
+    }
+    void load();
+  }, [account?.id]);
+
+  const totalPages = Math.ceil(events.length / pageSize);
+  const visibleEvents = events.slice(page * pageSize, (page + 1) * pageSize);
+
+  const totalRegistrations = events.reduce((acc, curr) => acc + (curr.currentRegistrations || 0), 0);
+  const totalCapacity = events.reduce((acc, curr) => acc + (curr.maxParticipants || 0), 0);
+  const activeEvents = events.filter((e) => e.status === "PUBLISHED").length;
+  const draftEvents = events.filter((e) => e.status === "DRAFT").length;
+
+  if (loading) return <Loading label="Loading workspace..." />;
+
+  return (
+    <div className="mx-auto max-w-6xl space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-bold text-emerald-700">Workspace</p>
+          <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-950">
+            {account?.organizationName || "Organization Dashboard"}
+          </h1>
+        </div>
+        <Link
+          href="/events/new"
+          className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 hover:bg-slate-800 px-5 text-sm font-bold text-white transition-colors"
+        >
+          Create event
+        </Link>
+      </div>
+
+      {!isVerified && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 animate-fadeIn">
+          <b>Approval pending.</b> Your organization profile is currently being reviewed by our super administrators. You can build drafts, but events can only be published once verified.
+        </div>
+      )}
+
+      {error && <Alert>{error}</Alert>}
+
+      {/* Stats Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Events</p>
+          <p className="mt-2 text-2xl font-black text-slate-800">{events.length}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Volunteers</p>
+          <p className="mt-2 text-2xl font-black text-emerald-600">{totalRegistrations}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Campaigns</p>
+          <p className="mt-2 text-2xl font-black text-cyan-600">{activeEvents}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Drafts</p>
+          <p className="mt-2 text-2xl font-black text-amber-600">{draftEvents}</p>
+        </div>
+      </div>
+
+      {/* Events List */}
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-black border-b pb-4 mb-4">My Events</h2>
+        {events.length === 0 ? (
+          <div className="py-12 text-center">
+            <p className="text-sm text-slate-500 font-semibold">No events created yet.</p>
+            <Link href="/events/new" className="mt-3 inline-block text-xs font-bold text-emerald-700 hover:underline">
+              Create your first event now →
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {visibleEvents.map((event) => {
+              const registrationPct = event.maxParticipants
+                ? Math.min(100, Math.round(((event.currentRegistrations || 0) / event.maxParticipants) * 100))
+                : 0;
+
+              return (
+                <div
+                  key={event.id}
+                  className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-slate-100 bg-slate-50/50 p-4 hover:bg-slate-50 transition"
+                >
+                  <div className="flex gap-4 items-center min-w-0">
+                    <div className="h-16 w-16 shrink-0 rounded-xl bg-emerald-100 overflow-hidden border border-slate-200">
+                      {event.coverImageUrl ? (
+                        <img src={event.coverImageUrl} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="grid h-full place-items-center text-xs font-bold text-emerald-700">
+                          Ween
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="truncate font-extrabold text-slate-800 text-base">{event.title}</h3>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {new Date(event.startDate).toLocaleDateString()} · {event.category.replaceAll("_", " ")}
+                      </p>
+                      <span className={`inline-block mt-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                        event.status === "PUBLISHED"
+                          ? "bg-emerald-100 text-emerald-800"
+                          : event.status === "DRAFT"
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-slate-100 text-slate-800"
+                      }`}>
+                        {event.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Registration Progress */}
+                  <div className="sm:max-w-xs w-full flex flex-col gap-1.5">
+                    <div className="flex justify-between text-xs font-semibold text-slate-500">
+                      <span>Registrations</span>
+                      <span>
+                        {event.currentRegistrations || 0} / {event.maxParticipants || "∞"} ({registrationPct}%)
+                      </span>
+                    </div>
+                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                      <div
+                        className="h-full bg-emerald-600 rounded-full transition-all duration-300"
+                        style={{ width: `${registrationPct}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
+                    {["PUBLISHED", "REGISTRATION_CLOSED", "ONGOING"].includes(event.status) && (
+                      <button
+                        type="button"
+                        onClick={() => setScanEvent(event)}
+                        className="col-span-2 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-700 sm:col-span-1"
+                      >
+                        <ScanLine className="h-4 w-4" /> Scan QR
+                      </button>
+                    )}
+                    <Link
+                      href={`/events/${event.id}`}
+                      className="rounded-xl border border-slate-200 hover:bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 transition"
+                    >
+                      View Details
+                    </Link>
+                    <Link
+                      href={`/events/${event.id}/edit`}
+                      className="rounded-xl bg-slate-900 hover:bg-slate-800 px-4 py-2 text-xs font-bold text-white transition"
+                    >
+                      Edit Event
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className="mt-6 border-t pt-4">
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={(p) => setPage(p)}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {scanEvent && (
+        <QrScannerModal
+          open
+          eventId={scanEvent.id}
+          eventTitle={scanEvent.title}
+          onClose={() => setScanEvent(null)}
+        />
+      )}
+    </div>
+  );
+}
