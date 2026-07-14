@@ -59,5 +59,59 @@ export default function AiAssistantPage() {
     }
     void loadHistory();
   }, []);
+  
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  async function handleSend(e: FormEvent) {
+    e.preventDefault();
+    if (!input.trim() || busy) return;
+
+    const userText = input.trim();
+    setInput("");
+    setError("");
+    const userMsg: Message = {
+      id: `user-${Date.now()}`,
+      sender: "user",
+      content: userText,
+      timestamp: new Date(),
+    };
+
+    setMessages((current) => [...current, userMsg]);
+    setBusy(true);
+
+    try {
+      const result = await aiApi.chat(userText);
+      const aiMsg: Message = {
+        id: `ai-${Date.now()}`,
+        sender: "ai",
+        content: result.response,
+        timestamp: new Date(),
+      };
+      setMessages((current) => [...current, aiMsg]);
+    } catch (cause) {
+      setError(errorMessage(cause));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleClear() {
+    if (!confirm("Clear your AI chat history?")) return;
+    setError("");
+    try {
+      await aiApi.clearHistory();
+      const welcome: Message = {
+        id: "welcome",
+        sender: "ai",
+        content: `Hello! I'm your Ween AI assistant. I can help answer questions about community guidelines, reward badges, coin distribution, and how to verify event check-ins. How can I help you today?`,
+        timestamp: new Date(),
+      };
+      setMessages([welcome]);
+    } catch (cause) {
+      setError(errorMessage(cause));
+    }
+  }
 
 }
