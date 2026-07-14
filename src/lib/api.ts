@@ -343,3 +343,39 @@ export function errorMessage(error: unknown) {
   return error instanceof ApiError ? error.message : "Something went wrong. Please try again.";
 }
 
+export interface AuditLog {
+  id: string;
+  action: string;
+  actorId?: string;
+  actorUsername?: string;
+  targetId?: string;
+  targetName?: string;
+  details?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface AdminUserDetail {
+  user: UserResponse;
+  certificates: Certificate[];
+  badges: UserBadge[];
+  eventsAttended: EventSummary[];
+  eventsOrganized: EventSummary[];
+  coinTransactions: CoinTransactionResponse[];
+}
+
+export interface ReferralResponse {
+  id: string;
+  referrerId: string;
+  referrerName: string;
+  referredId: string;
+  referredName: string;
+  coinAwarded: boolean;
+  createdAt: string;
+}
+
+export interface AiStatsResponse {
+  totalMessages: number;
+  totalUsers: number;
+}
+
