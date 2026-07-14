@@ -161,7 +161,7 @@ export const authApi = {
 };
 
 export const eventsApi = {
-  list: (params: { page?: number; size?: number; search?: string; category?: string } = {}) =>
+  list: (params: { page?: number; size?: number; search?: string; category?: string; sort?: string } = {}) =>
     backend<Page<EventSummary>>(`/api/v1/events${query({ size: 12, ...params })}`),
   detail: (id: string) => backend<EventDetail>(`/api/v1/events/${id}`),
   create: (input: EventInput, coverImage?: File) =>
@@ -182,8 +182,10 @@ export const eventsApi = {
 };
 
 export const postsApi = {
-  list: (params: { page?: number; size?: number } = {}) =>
+  list: (params: { page?: number; size?: number; sort?: string } = {}) =>
     backend<Page<Post>>(`/api/v1/posts${query({ size: 12, ...params })}`),
+  following: (params: { page?: number; size?: number } = {}) =>
+    backend<Page<Post>>(`/api/v1/posts/following${query({ size: 12, ...params })}`),
   detail: (id: string) => backend<Post>(`/api/v1/posts/${id}`),
   create: (input: PostInput, files: File[] = []) =>
     backend<Post>("/api/v1/posts", { method: "POST", body: multipart({ content: input.content }, files.map((file) => ({ name: "files", file }))) }),
@@ -213,6 +215,42 @@ export const adminApi = {
     backend<null>(`/api/v1/admin/users/${id}/ban-user?reason=${encodeURIComponent(reason)}`, { method: "PUT" }),
   unbanUser: (id: string) =>
     backend<null>(`/api/v1/admin/users/${id}/unban-user`, { method: "PUT" }),
+  userDetail: (id: string) =>
+    backend<AdminUserDetail>(`/api/v1/admin/users/${id}`),
+  changeRole: (id: string, role: string) =>
+    backend<UserResponse>(`/api/v1/admin/users/${id}/role`, { method: "PUT", body: JSON.stringify({ role }) }),
+  deleteUser: (id: string) =>
+    backend<null>(`/api/v1/admin/users/${id}`, { method: "DELETE" }),
+  deleteOrganization: (id: string) =>
+    backend<null>(`/api/v1/admin/organizations/${id}`, { method: "DELETE" }),
+  adjustCoins: (userId: string, amount: number, reason: string) =>
+    backend<null>("/api/v1/admin/coins/adjust", { method: "POST", body: JSON.stringify({ userId, amount, reason }) }),
+  auditLogs: (page = 0) =>
+    backend<Page<AuditLog>>(`/api/v1/admin/audit-logs?page=${page}&size=50`),
+  events: (search = "", page = 0) =>
+    backend<Page<EventSummary>>(`/api/v1/admin/events?search=${encodeURIComponent(search)}&page=${page}&size=20`),
+  updateEvent: (id: string, input: Partial<EventSummary>) =>
+    backend<EventSummary>(`/api/v1/admin/events/${id}`, { method: "PUT", body: JSON.stringify(input) }),
+  deleteEvent: (id: string) =>
+    backend<null>(`/api/v1/admin/events/${id}`, { method: "DELETE" }),
+  eventRegistrations: (id: string, page = 0) =>
+    backend<Page<ParticipantResponse>>(`/api/v1/admin/events/${id}/registrations?page=${page}&size=50`),
+  posts: (search = "", page = 0) =>
+    backend<Page<Post>>(`/api/v1/admin/posts?search=${encodeURIComponent(search)}&page=${page}&size=20`),
+  deletePost: (id: string) =>
+    backend<null>(`/api/v1/admin/posts/${id}`, { method: "DELETE" }),
+  postComments: (postId: string, page = 0) =>
+    backend<Page<PostComment>>(`/api/v1/admin/posts/${postId}/comments?page=${page}&size=50`),
+  deleteComment: (postId: string, commentId: string) =>
+    backend<null>(`/api/v1/admin/posts/${postId}/comments/${commentId}`, { method: "DELETE" }),
+  certificates: (search = "", page = 0) =>
+    backend<Page<Certificate>>(`/api/v1/admin/certificates?search=${encodeURIComponent(search)}&page=${page}&size=50`),
+  revokeCertificate: (id: string) =>
+    backend<null>(`/api/v1/admin/certificates/${id}`, { method: "DELETE" }),
+  referrals: (page = 0) =>
+    backend<Page<ReferralResponse>>(`/api/v1/admin/referrals?page=${page}&size=50`),
+  aiStats: () =>
+    backend<AiStatsResponse>("/api/v1/admin/ai/stats"),
 };
 
 export type ProfileInput = {
@@ -305,7 +343,7 @@ export const organizationsApi = {
   get: (id: string) => backend<OrganizationProfile>(`/api/v1/organizations/${id}`),
   update: (id: string, input: OrganizationInput, logo?: File, banner?: File) =>
     backend<OrganizationProfile>(`/api/v1/organizations/${id}`, { method: "PUT", body: multipart(input, [{ name: "logo", file: logo }, { name: "banner", file: banner }]) }),
-  events: () => backend<Page<EventSummary>>("/api/v1/organizations/current-organization-events?size=100"),
+  events: () => backend<EventSummary[]>("/api/v1/organizations/current-organization-events"),
   inviteOrganizer: (orgId: string, emailOrUsername: string) => backend<null>(`/api/v1/organizations/${orgId}/invitations`, { method: "POST", body: JSON.stringify({ emailOrUsername }) }),
   removeOrganizer: (orgId: string, organizerId: string) => backend<null>(`/api/v1/organizations/${orgId}/organizers/${organizerId}`, { method: "DELETE" }),
 };
@@ -325,11 +363,21 @@ export const qrApi = {
   generate: () => backend<QrPayload>("/api/v1/qr/generate"),
 };
 
+export interface AiBackendMessage {
+  id: string;
+  userId: string;
+  sender: "USER" | "AI";
+  content: string;
+  createdAt: string;
+}
+
 export const aiApi = {
   suggestEventContent: (input: AiEventSuggestRequest) =>
     backend<AiEventSuggestResponse>("/api/v1/ai/suggest-event-content", { method: "POST", body: JSON.stringify(input) }),
   chat: (message: string) =>
     backend<AiChatResponse>("/api/v1/ai/chat", { method: "POST", body: JSON.stringify({ message }) }),
+  history: (page = 0) => backend<Page<AiBackendMessage>>(`/api/v1/ai/history?page=${page}&size=100`),
+  clearHistory: () => backend<null>("/api/v1/ai/history", { method: "DELETE" }),
 };
 
 export const coinsApi = {
