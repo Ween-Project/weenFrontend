@@ -39,5 +39,111 @@ function CoinsWallet() {
       setLoadingMore(false);
     }
   }
- 
+
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      setError("");
+      try {
+        const bal = await coinsApi.balance();
+        setBalance(bal);
+        await loadTransactions(0);
+      } catch (cause) {
+        setError(errorMessage(cause));
+      } finally {
+        setLoading(false);
+      }
+    }
+    void loadData();
+  }, []);
+
+  function getReasonText(reason: string) {
+    switch (reason) {
+      case "SIGNUP":
+        return "New Account Registration";
+      case "ATTENDANCE":
+        return "Event Attendance Verification";
+      case "REFERRAL":
+        return "Friend Referral Bonus";
+      case "PROFILE_COMPLETE":
+        return "Profile Completion Bonus";
+      case "ADMIN_ADJUSTMENT":
+        return "Manual Admin Adjustment";
+      default:
+        return reason;
+    }
+  }
+
+  if (loading) return <Loading label="Loading your wallet…" />;
+
+  return (
+    <div className="mx-auto max-w-4xl space-y-6">
+      <header className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
+        <h1 className="text-2xl font-black">My Wallet</h1>
+        <p className="mt-1 text-sm text-slate-500">Track and manage your earned WeenCoins.</p>
+
+        {error && <div className="mt-5"><Alert>{error}</Alert></div>}
+
+        <div className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between border-t pt-6">
+          <div>
+            <p className="text-xs font-black uppercase tracking-wider text-slate-400">Total Balance</p>
+            <p className="mt-1 text-5xl font-black tracking-tight text-emerald-600">
+              {balance !== null ? `${balance} 🪙` : "—"}
+            </p>
+          </div>
+          <div className="max-w-md rounded-2xl bg-emerald-50 p-4 border border-emerald-100">
+            <p className="text-xs font-bold uppercase text-emerald-800">About WeenCoins</p>
+            <p className="mt-1.5 text-xs leading-5 text-emerald-900">
+              WeenCoins are rewarded for verified volunteer actions, completing your profile, referring colleagues, and participating in community events. Build your coin profile to showcase your impact!
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
+        <h2 className="text-lg font-black border-b pb-4 mb-4">Transaction History</h2>
+        {transactions.length === 0 ? (
+          <div className="py-12 text-center">
+            <span className="text-3xl">🪙</span>
+            <p className="mt-3 text-sm text-slate-500 font-semibold">No transactions recorded yet.</p>
+            <p className="mt-1 text-xs text-slate-400">Register for events and participate to start earning!</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {transactions.map((tx) => {
+              const positive = tx.amount >= 0;
+              return (
+                <div key={tx.id} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition hover:bg-slate-50">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-900">{getReasonText(tx.reason)}</p>
+                    <time className="mt-1 block text-xs text-slate-400">
+                      {new Date(tx.createdAt).toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      })}
+                    </time>
+                  </div>
+                  <span className={`text-sm font-black whitespace-nowrap rounded-full px-3 py-1 ${positive ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"}`}>
+                    {positive ? `+${tx.amount}` : tx.amount} 🪙
+                  </span>
+                </div>
+              );
+            })}
+
+            <div className="mt-6 border-t pt-4">
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={(p) => void loadTransactions(p)}
+                isLoading={loadingMore}
+              />
+            </div>
+          </div>
+        )}
+      </section>
+    </div>
+  );
 }
