@@ -39,7 +39,8 @@ function CoinsWallet() {
       setLoadingMore(false);
     }
   }
-    useEffect(() => {
+
+  useEffect(() => {
     async function loadData() {
       setLoading(true);
       setError("");
@@ -74,7 +75,8 @@ function CoinsWallet() {
   }
 
   if (loading) return <Loading label="Loading your wallet…" />;
-   return (
+
+  return (
     <div className="mx-auto max-w-4xl space-y-6">
       <header className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
         <h1 className="text-2xl font-black">My Wallet</h1>
@@ -97,8 +99,8 @@ function CoinsWallet() {
           </div>
         </div>
       </header>
-      
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
+
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
         <h2 className="text-lg font-black border-b pb-4 mb-4">Transaction History</h2>
         {transactions.length === 0 ? (
           <div className="py-12 text-center">
@@ -130,8 +132,18 @@ function CoinsWallet() {
                 </div>
               );
             })}
-           </div>
+
+            <div className="mt-6 border-t pt-4">
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={(p) => void loadTransactions(p)}
+                isLoading={loadingMore}
+              />
+            </div>
+          </div>
         )}
-        </section>
-    );
+      </section>
+    </div>
+  );
 }
