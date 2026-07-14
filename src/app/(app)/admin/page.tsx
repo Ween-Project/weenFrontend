@@ -506,5 +506,299 @@ function AdminDashboard() {
     }
   }
 
- 
-}
+  async function handleDeletePost(postId: string) {
+    if (!confirm("Permanently delete this post and all comments/likes associated with it?")) return;
+    setBusy(postId);
+    setError("");
+    try {
+      await adminApi.deletePost(postId);
+      setPosts((curr) => curr.filter((p) => p.id !== postId));
+      notify("Post removed");
+      void loadOverview();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function handleViewComments(postId: string) {
+    setBusy(postId);
+    setError("");
+    try {
+      const res = await adminApi.postComments(postId, 0);
+      setSelectedPostComments(res.content);
+      setCommentPostId(postId);
+      setShowCommentsModal(true);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function handleDeleteComment(commentId: string) {
+    if (!confirm("Permanently delete this comment?")) return;
+    setBusy(commentId);
+    setError("");
+    try {
+      await adminApi.deleteComment(commentPostId, commentId);
+      setSelectedPostComments((curr) => curr.filter((c) => c.id !== commentId));
+      notify("Comment removed");
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function handleRevokeCert(certId: string) {
+    if (!confirm("Revoke this certificate permanently?")) return;
+    setBusy(certId);
+    setError("");
+    try {
+      await adminApi.revokeCertificate(certId);
+      setCerts((curr) => curr.filter((c) => c.id !== certId));
+      notify("Certificate revoked");
+      void loadOverview();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  if (!stats && tab === "overview" && !error) return <DashboardSkeleton />;
+
+  return (
+    <div className="mx-auto max-w-[1600px] px-1 py-4 sm:px-4 sm:py-6 lg:px-6">
+      <ToastViewport messages={toasts} onDismiss={(id) => setToasts((current) => current.filter((toast) => toast.id !== id))} />
+      {/* Header Banner */}
+      <header className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-ink via-forest to-emerald-700 p-6 text-white shadow-soft sm:p-8 lg:p-10">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl" />
+        <p className="text-xs font-bold uppercase tracking-[0.25em] text-emerald-400">
+          Super Admin Console
+        </p>
+        <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
+          System Command Center
+        </h1>
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-emerald-100/70">
+          Enforce guidelines, manage privileges, distribute community incentives, and oversee operations platform-wide.
+        </p>
+      </header>
+
+      {/* Global Alerts */}
+      {error && (
+        <div className="mt-6">
+          <Alert tone="error">
+            <span className="font-bold">Error:</span> {error}
+          </Alert>
+        </div>
+      )}
+
+      {/* Navigation Layout - Responsive Sidebar/Top nav */}
+      <div className="mt-6 lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-7">
+        {/* Navigation Sidebar (Desktop) or Horizontal Scroll (Mobile) */}
+        <aside>
+          <nav className="flex gap-2 overflow-x-auto border-b border-border pb-4 lg:sticky lg:top-20 lg:flex-col lg:overflow-visible lg:rounded-2xl lg:border lg:bg-white lg:p-2 lg:shadow-sm">
+            {moduleNav.map(({ id: t, label, icon: Icon }) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`group relative flex min-h-11 items-center gap-3 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-left text-sm font-bold transition-all duration-200 ${
+                  tab === t
+                    ? "bg-emerald-50 text-forest before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-r-full before:bg-primary"
+                    : "text-muted hover:bg-surface hover:text-ink"
+                }`}
+              >
+                <Icon className={`h-[18px] w-[18px] ${tab === t ? "text-emerald-600" : "text-slate-400 group-hover:text-forest"}`} strokeWidth={1.9} />
+                <span>{label}</span>
+              </button>
+            ))}
+          </nav>
+        </aside>
+
+        {/* Content Panel */}
+        <main className="mt-6 min-w-0 lg:mt-0">
+          {/* TAB 1: OVERVIEW */}
+          {tab === "overview" && stats && (
+            <div className="space-y-8 animate-fadeIn">
+              {/* Aggregation Stats Grid */}
+              <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {Object.entries(statMeta).map(([key, meta]) => {
+                  const Icon = meta.icon;
+                  return <article
+                    key={key}
+                    className="group rounded-2xl border border-border bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-soft"
+                  >
+                    <div className={`grid h-11 w-11 place-items-center rounded-xl ${meta.tone}`}>
+                      <Icon className="h-5 w-5" strokeWidth={1.9} />
+                    </div>
+                    <p className="mt-6 text-3xl font-black text-slate-900">
+                      {Number(stats[key as keyof AdminStats] || 0).toLocaleString()}
+                    </p>
+                    <p className="mt-1 text-xs font-bold uppercase tracking-wider text-slate-400">
+                      {meta.label}
+                    </p>
+                  </article>;
+                })}
+              </section>
+
+              {/* Extra Stats Cards */}
+              <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {([
+                  ["Verified Orgs", stats.verifiedOrganizations, ShieldCheck],
+                  ["Published Events", stats.publishedEvents, CalendarDays],
+                  ["Certificates Issued", stats.totalCertificatesIssued, Award],
+                  ["Coins Distributed", stats.totalCoinsDistributed, Coins],
+                ] as [string, number, LucideIcon][]).map(([label, value, Icon]) => (
+                  <div
+                    key={String(label)}
+                    className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex items-center gap-4"
+                  >
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-700"><Icon className="h-5 w-5" strokeWidth={1.9} /></div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{label}</p>
+                      <p className="mt-1 text-xl font-extrabold text-slate-800">
+                        {Number(value).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </section>
+
+              <section className="grid gap-6 xl:grid-cols-2">
+                <MetricBarChart
+                  title="Organization verification"
+                  description="Current verified and pending organizations"
+                  color="#26DE81"
+                  data={[{ status: "Verified", value: stats.verifiedOrganizations }, { status: "Pending", value: stats.pendingOrganizations }]}
+                />
+                <MetricBarChart
+                  title="Event publishing"
+                  description="Published events compared with all other states"
+                  color="#174F3B"
+                  data={[{ status: "Published", value: stats.publishedEvents }, { status: "Other", value: Math.max(0, stats.totalEvents - stats.publishedEvents) }]}
+                />
+              </section>
+            </div>
+          )}
+
+          {/* TAB 2: USERS */}
+          {tab === "users" && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="rounded-3xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+                <div className="flex flex-col gap-4 border-b border-slate-100 p-6 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-800">User Administration</h2>
+                    <p className="mt-1 text-sm text-slate-500">Monitor members, modify privileges, adjust coin balances.</p>
+                  </div>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void loadUsers(0);
+                    }}
+                    className="flex gap-2"
+                  >
+                    <input
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      placeholder="Username or email..."
+                      className="h-11 rounded-xl bg-slate-100 px-4 text-sm focus:outline-emerald-600 focus:bg-white transition-all w-full sm:w-64"
+                    />
+                    <button className="rounded-xl bg-slate-950 px-5 text-sm font-bold text-white hover:bg-slate-800 transition-colors">
+                      Search
+                    </button>
+                  </form>
+                </div>
+
+                <div className="divide-y divide-slate-100">
+                  {users.map((u) => (
+                    <article key={u.id} className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center">
+                      <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 font-extrabold text-emerald-800 shadow-sm border border-emerald-200">
+                        {u.profilePhotoUrl ? (
+                          <img src={u.profilePhotoUrl} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          u.fullName.slice(0, 2).toUpperCase()
+                        )}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-extrabold text-slate-800 text-sm truncate">{u.fullName}</h3>
+                          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 uppercase">
+                            {u.role}
+                          </span>
+                          {u.banned && (
+                            <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-[10px] font-bold text-red-700">
+                              BANNED
+                            </span>
+                          )}
+                          {u.isEmailVerified ? (
+                            <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                              VERIFIED
+                            </span>
+                          ) : (
+                            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-400">
+                              UNVERIFIED
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1">@{u.username} · {u.email}</p>
+                        {u.banReason && (
+                          <p className="mt-2 text-xs text-red-700 bg-red-50/50 p-2 rounded-lg border border-red-100/50">
+                            Ban Reason: {u.banReason}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => void handleViewUserDetail(u.id)}
+                          className="rounded-xl border border-slate-200 hover:bg-slate-50 px-4 py-2 text-xs font-bold text-slate-700 transition-colors"
+                        >
+                          Manage
+                        </button>
+                        {u.banned ? (
+                          <button
+                            disabled={busy === u.id}
+                            onClick={() => void handleUnbanUser(u.id)}
+                            className="rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-bold text-white transition-colors"
+                          >
+                            Unban
+                          </button>
+                        ) : (
+                          <button
+                            disabled={busy === u.id}
+                            onClick={() => void handleBanUser(u.id)}
+                            className="rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 px-4 py-2 text-xs font-bold text-red-700 transition-colors"
+                          >
+                            Ban
+                          </button>
+                        )}
+                        <button
+                          disabled={busy === u.id}
+                          onClick={() => void handleDeleteUser(u.id)}
+                          className="rounded-xl bg-red-600 hover:bg-red-700 px-4 py-2 text-xs font-bold text-white transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                  {users.length === 0 && (
+                    <p className="p-12 text-center text-sm text-slate-400">No users found.</p>
+                  )}
+                </div>
+
+                <div className="border-t border-slate-100 p-4">
+                  <Pagination
+                    currentPage={userPage}
+                    totalPages={userTotalPages}
+                    onPageChange={(page) => void loadUsers(page)}
+                  />
+                </div>
+              </div>
+            </div>
+          )
+
+          } 
+          
