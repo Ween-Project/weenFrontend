@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ACCESS_COOKIE, REFRESH_COOKIE, backendUrl, clearSessionCookies } from "@/lib/server-auth";
 import type { ApiEnvelope } from "@/types";
 
-async function forward(request: NextRequest, path: string[], body: Buffer | undefined, accessToken?: string) {
+async function forward(request: NextRequest, path: string[], body: ArrayBuffer | undefined, accessToken?: string) {
   const headers = new Headers();
   const contentType = request.headers.get("content-type");
   if (contentType) headers.set("Content-Type", contentType);
@@ -18,7 +18,7 @@ async function forward(request: NextRequest, path: string[], body: Buffer | unde
 
 async function handler(request: NextRequest, context: { params: { path: string[] } }) {
   let accessToken = request.cookies.get(ACCESS_COOKIE)?.value;
-  const body = request.method === "GET" || request.method === "HEAD" ? undefined : Buffer.from(await request.arrayBuffer());
+  const body = request.method === "GET" || request.method === "HEAD" ? undefined : await request.arrayBuffer();
   let backend = await forward(request, context.params.path, body, accessToken);
   let refreshedToken: string | undefined;
 
