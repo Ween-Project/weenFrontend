@@ -201,6 +201,7 @@ export type PublicProfile = {
   followingCount?: number;
   following?: boolean;
   canMessage?: boolean;
+  isEmailVerified?: boolean;
 };
 
 export type Certificate = {

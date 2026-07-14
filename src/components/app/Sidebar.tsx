@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { QrModal } from "@/components/qr/QrModal";
+import { chatApi, notificationsApi } from "@/lib/api";
 
 const icons: Record<string, React.ReactNode> = {
   Home: <path d="M3 11.5L12 4l9 7.5V21h-6v-6H9v6H3z" />,
@@ -34,13 +35,77 @@ export function Sidebar() {
   const pathname = usePathname();
   const { account } = useAuth();
   const [qrOpen, setQrOpen] = useState(false);
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+
+  useEffect(() => {
+    if (!account) return;
+    let active = true;
+
+    async function checkUnreads() {
+      try {
+        const [convs, notifs] = await Promise.all([
+          chatApi.conversations().catch(() => []),
+          notificationsApi.list().catch(() => ({ content: [] }))
+        ]);
+        if (!active) return;
+        const totalUnreadMsgs = convs.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+        const hasUnreadNotifs = notifs.content.some((n) => !n.isRead);
+        setUnreadMessagesCount(totalUnreadMsgs);
+        setHasUnreadNotifications(hasUnreadNotifs);
+      } catch (err) {
+        console.error("Failed to check unreads in Sidebar", err);
+      }
+    }
+
+    void checkUnreads();
+    const interval = setInterval(checkUnreads, 10000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [account]);
+
   const isOrganization = account?.role === "ORGANIZATION_ADMIN";
   const visible = links.filter((item) => item.roles.length === 0 || (account && item.roles.some((role) => role === account.role)))
     .map((item) => item.label === "Profile" && account?.username ? { ...item, href: `/profile/${account.username}` } : item);
   return <>
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[244px] border-r border-slate-200 bg-white px-4 py-6 transition-colors lg:flex lg:flex-col dark:border-slate-800 dark:bg-slate-950">
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[244px] border-r border-slate-200 bg-white px-4 py-6 transition-colors lg:flex lg:flex-col">
       <Link href="/dashboard" className="flex items-center gap-2 px-3 text-2xl font-black tracking-[-.06em] text-slate-950"><span className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-600 text-base text-white">w</span>ween</Link>
-      <nav className="mt-9 space-y-1.5">{visible.map((item) => { const active = pathname === item.href || pathname.startsWith(`${item.href}/`); return <Link key={item.href} href={item.href} className={`flex items-center gap-4 rounded-xl px-3 py-3 text-[15px] transition ${active ? "bg-emerald-50 font-extrabold text-emerald-800" : "font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-950"}`}><svg className="h-[22px] w-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{icons[item.label]}</svg>{item.label}</Link>; })}{!isOrganization && <button type="button" onClick={() => setQrOpen(true)} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-[15px] font-semibold text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-800"><QrIcon />My QR code</button>}</nav>
+      <nav className="mt-9 space-y-1.5">
+        {visible.map((item) => {
+          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-4 rounded-xl px-3 py-3 text-[15px] transition ${
+                active
+                  ? "bg-emerald-50 font-extrabold text-emerald-800"
+                  : "font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+              }`}
+            >
+              <svg className="h-[22px] w-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                {icons[item.label]}
+              </svg>
+              <span>{item.label}</span>
+              {item.label === "Messages" && unreadMessagesCount > 0 && (
+                <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-sm">
+                  {unreadMessagesCount}
+                </span>
+              )}
+              {item.label === "Notifications" && hasUnreadNotifications && (
+                <span className="ml-auto h-2.5 w-2.5 rounded-full bg-red-500 shadow-sm" />
+              )}
+            </Link>
+          );
+        })}
+        {!isOrganization && (
+          <button type="button" onClick={() => setQrOpen(true)} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-[15px] font-semibold text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-800">
+            <QrIcon />My QR code
+          </button>
+        )}
+      </nav>
       <Link href="/posts" className="mt-7 flex h-12 items-center justify-center rounded-full bg-emerald-600 text-sm font-extrabold text-white shadow-lg shadow-emerald-600/20">Create post</Link>
       <Link href={account?.username ? `/profile/${account.username}` : "/settings"} className="mt-auto flex items-center gap-3 rounded-2xl border border-slate-200 p-3 transition hover:bg-slate-50">
         {account?.profilePhotoUrl || account?.logoUrl ? (
@@ -54,13 +119,14 @@ export function Sidebar() {
         </div>
       </Link>
     </aside>
-    <nav className={`fixed inset-x-0 bottom-0 z-50 grid h-[68px] ${isOrganization ? "grid-cols-4" : "grid-cols-5"} items-center border-t border-slate-200 bg-white/95 px-3 backdrop-blur transition-colors lg:hidden dark:border-slate-800 dark:bg-slate-950/95`}>
+    <nav className={`fixed inset-x-0 bottom-0 z-50 grid h-[68px] ${isOrganization ? "grid-cols-4" : "grid-cols-5"} items-center border-t border-slate-200 bg-white/95 px-3 backdrop-blur transition-colors lg:hidden`}>
       <MobileLink item={visible.find((item) => item.label === "Home")} pathname={pathname} />
       <MobileLink item={visible.find((item) => item.label === "Explore")} pathname={pathname} />
       {!isOrganization && (
         <button type="button" onClick={() => setQrOpen(true)} aria-label="Generate QR code" className="mx-auto -mt-5 grid h-16 w-16 place-items-center rounded-full border-[5px] border-[#f7f8fa] bg-emerald-600 text-white shadow-xl shadow-emerald-600/25"><QrIcon large /></button>
       )}
-      <MobileLink item={visible.find((item) => item.label === "Messages")} pathname={pathname} />
+      <MobileLink item={visible.find((item) => item.label === "Messages")} pathname={pathname} unreadCount={unreadMessagesCount} />
+      <MobileLink item={visible.find((item) => item.label === "Notifications")} pathname={pathname} hasBadge={hasUnreadNotifications} />
       <MobileLink item={visible.find((item) => item.label === "Profile")} pathname={pathname} />
     </nav>
     <QrModal open={qrOpen} onClose={() => setQrOpen(false)} />
@@ -71,8 +137,38 @@ function QrIcon({ large = false }: { large?: boolean }) {
   return <svg className={large ? "h-7 w-7" : "h-[22px] w-[22px]"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM15 14h2v2h-2zM18 14h2v6h-6v-2" /></svg>;
 }
 
-function MobileLink({ item, pathname }: { item: { href: string; label: keyof typeof icons } | undefined; pathname: string }) {
+function MobileLink({
+  item,
+  pathname,
+  unreadCount,
+  hasBadge,
+}: {
+  item: { href: string; label: keyof typeof icons } | undefined;
+  pathname: string;
+  unreadCount?: number;
+  hasBadge?: boolean;
+}) {
   if (!item) return <span />;
   const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-  return <Link href={item.href} aria-label={item.label} className={`mx-auto grid h-11 w-11 place-items-center rounded-xl ${active ? "bg-emerald-50 text-emerald-700" : "text-slate-500"}`}><svg className="h-[22px] w-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">{icons[item.label]}</svg></Link>;
+  return (
+    <Link
+      href={item.href}
+      aria-label={item.label}
+      className={`mx-auto grid h-11 w-11 place-items-center rounded-xl relative ${
+        active ? "bg-emerald-50 text-emerald-700" : "text-slate-500"
+      }`}
+    >
+      <svg className="h-[22px] w-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        {icons[item.label]}
+      </svg>
+      {item.label === "Messages" && unreadCount ? unreadCount > 0 && (
+        <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[8px] font-bold text-white shadow-sm">
+          {unreadCount}
+        </span>
+      ) : null}
+      {item.label === "Notifications" && hasBadge ? (
+        <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 shadow-sm" />
+      ) : null}
+    </Link>
+  );
 }

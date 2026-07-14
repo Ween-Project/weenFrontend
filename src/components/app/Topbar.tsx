@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { chatApi, notificationsApi } from "@/lib/api";
 
 const names: Record<string, string> = {
   dashboard: "Feed",
@@ -46,6 +47,37 @@ export function Topbar() {
   const { account, logout } = useAuth();
   const [busy, setBusy] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+
+  useEffect(() => {
+    if (!account) return;
+    let active = true;
+
+    async function checkUnreads() {
+      try {
+        const [convs, notifs] = await Promise.all([
+          chatApi.conversations().catch(() => []),
+          notificationsApi.list().catch(() => ({ content: [] }))
+        ]);
+        if (!active) return;
+        const totalUnreadMsgs = convs.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+        const hasUnreadNotifs = notifs.content.some((n) => !n.isRead);
+        setUnreadMessagesCount(totalUnreadMsgs);
+        setHasUnreadNotifications(hasUnreadNotifs);
+      } catch (err) {
+        console.error("Failed to check unreads in Topbar", err);
+      }
+    }
+
+    void checkUnreads();
+    const interval = setInterval(checkUnreads, 10000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [account]);
+
   const section = pathname.split("/").filter(Boolean)[0] || "dashboard";
 
   const visibleLinks = links.filter(
@@ -54,7 +86,7 @@ export function Topbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/90 px-4 backdrop-blur transition-colors sm:px-6 lg:px-8 dark:border-slate-800 dark:bg-slate-950/85">
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/90 px-4 backdrop-blur transition-colors sm:px-6 lg:px-8">
         <div className="flex items-center gap-3 lg:hidden">
           <button
             type="button"
@@ -75,16 +107,24 @@ export function Topbar() {
         </div>
         <h1 className="hidden text-lg font-black text-slate-950 lg:block">{names[section] || "Ween"}</h1>
         <div className="flex items-center gap-2">
-          <Link href="/messages" aria-label="Messages" className="grid h-10 w-10 place-items-center rounded-full text-slate-600 hover:bg-slate-100">
+          <Link href="/messages" aria-label="Messages" className="grid h-10 w-10 place-items-center rounded-full text-slate-600 hover:bg-slate-100 relative">
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <path d="M4 5h16v12H8l-4 3z" />
             </svg>
+            {unreadMessagesCount > 0 && (
+              <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[8px] font-bold text-white shadow-sm">
+                {unreadMessagesCount}
+              </span>
+            )}
           </Link>
-          <Link href="/notifications" aria-label="Notifications" className="grid h-10 w-10 place-items-center rounded-full text-slate-600 hover:bg-slate-100">
+          <Link href="/notifications" aria-label="Notifications" className="grid h-10 w-10 place-items-center rounded-full text-slate-600 hover:bg-slate-100 relative">
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <path d="M18 9a6 6 0 00-12 0c0 6-2 6-2 8h16c0-2-2-2-2-8" />
               <path d="M10 21h4" />
             </svg>
+            {hasUnreadNotifications && (
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 shadow-sm" />
+            )}
           </Link>
           <button type="button" disabled={busy} onClick={() => { setBusy(true); void logout(); }} className="ml-1 rounded-full border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 transition">
             {busy ? "..." : "Log out"}
@@ -101,7 +141,7 @@ export function Topbar() {
             className="fixed inset-0 bg-slate-900/35 backdrop-blur-sm transition-opacity duration-300"
           />
           {/* Drawer Panel */}
-          <div className="fixed inset-y-0 left-0 flex w-full max-w-[300px] flex-col bg-white p-6 shadow-2xl transition-transform duration-300 dark:bg-slate-950">
+          <div className="fixed inset-y-0 left-0 flex w-full max-w-[300px] flex-col bg-white p-6 shadow-2xl transition-transform duration-300">
             <div className="flex items-center justify-between border-b pb-4">
               <Link href="/dashboard" onClick={() => setDrawerOpen(false)} className="flex items-center gap-2 text-2xl font-black tracking-[-.06em] text-slate-950">
                 <span className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-600 text-base text-white">w</span>
@@ -137,7 +177,15 @@ export function Topbar() {
                     <svg className="h-[22px] w-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                       {icons[item.label]}
                     </svg>
-                    {item.label}
+                    <span>{item.label}</span>
+                    {item.label === "Messages" && unreadMessagesCount > 0 && (
+                      <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-sm">
+                        {unreadMessagesCount}
+                      </span>
+                    )}
+                    {item.label === "Notifications" && hasUnreadNotifications && (
+                      <span className="ml-auto h-2.5 w-2.5 rounded-full bg-red-500 shadow-sm" />
+                    )}
                   </Link>
                 );
               })}

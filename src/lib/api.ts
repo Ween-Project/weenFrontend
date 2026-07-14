@@ -142,8 +142,8 @@ export const authApi = {
   session: () => request<{ account: Account }>("/api/auth/session", {}, false),
   login: (input: LoginInput) =>
     request<{ account: Account }>("/api/auth/login", { method: "POST", body: JSON.stringify(input) }, false),
-  register: (input: RegistrationInput) =>
-    request<{ account: Account }>("/api/auth/register", { method: "POST", body: JSON.stringify(input) }, false),
+  register: (input: RegistrationInput | FormData) =>
+    request<{ account: Account }>("/api/auth/register", { method: "POST", body: input instanceof FormData ? input : JSON.stringify(input) }, false),
   logout: () => request<{ success: boolean }>("/api/auth/logout", { method: "POST" }, false),
   token: () => request<{ token: string }>("/api/auth/token", {}, false),
   updateSession: (account: Partial<Account>) =>

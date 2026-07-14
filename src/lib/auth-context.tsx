@@ -11,7 +11,7 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (input: LoginInput) => Promise<void>;
-  register: (input: RegistrationInput) => Promise<void>;
+  register: (input: RegistrationInput | FormData) => Promise<void>;
   logout: (reason?: string) => Promise<void>;
   refresh: () => Promise<void>;
 };
