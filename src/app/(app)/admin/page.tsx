@@ -798,7 +798,283 @@ function AdminDashboard() {
                 </div>
               </div>
             </div>
-          )
+          )}
 
-          } 
-          
+          {/* TAB 3: ORGANIZATIONS */}
+          {tab === "orgs" && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="rounded-3xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+                <div className="flex flex-col gap-4 border-b border-slate-100 p-6 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-800">Organization Moderation</h2>
+                    <p className="mt-1 text-sm text-slate-500">Review pending validation requests and delete organizational entities.</p>
+                  </div>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void loadOrgs(0);
+                    }}
+                    className="flex gap-2"
+                  >
+                    <input
+                      value={orgSearch}
+                      onChange={(e) => setOrgSearch(e.target.value)}
+                      placeholder="Org name..."
+                      className="h-11 rounded-xl bg-slate-100 px-4 text-sm focus:outline-emerald-600 focus:bg-white transition-all w-full sm:w-64"
+                    />
+                    <button className="rounded-xl bg-slate-955 px-5 text-sm font-bold text-white hover:bg-slate-800 transition-colors">
+                      Search
+                    </button>
+                  </form>
+                </div>
+
+                <div className="divide-y divide-slate-100">
+                  {orgs.map((org) => (
+                    <article key={org.id} className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center">
+                      <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-violet-100 font-extrabold text-violet-800 shadow-sm border border-violet-200">
+                        {org.logoUrl ? (
+                          <img src={org.logoUrl} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          org.organizationName.slice(0, 2).toUpperCase()
+                        )}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="truncate font-extrabold text-slate-800 text-sm">{org.organizationName}</h3>
+                          <span
+                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                              org.isVerified ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+                            }`}
+                          >
+                            {org.isVerified ? "APPROVED" : "PENDING"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1">@{org.username} · {org.email}</p>
+                        <p className="mt-2 line-clamp-2 text-xs text-slate-600 leading-relaxed">
+                          {org.description || "No description supplied."}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {!org.isVerified ? (
+                          <>
+                            <button
+                              disabled={busy === org.id}
+                              onClick={() => void handleVerifyOrg(org, true)}
+                              className="rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-bold text-white transition-colors"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              disabled={busy === org.id}
+                              onClick={() => void handleRejectOrg(org.id)}
+                              className="rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 px-4 py-2 text-xs font-bold text-red-700 transition-colors"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            disabled={busy === org.id}
+                            onClick={() => void handleVerifyOrg(org, false)}
+                            className="rounded-xl border border-red-200 hover:bg-red-50 px-4 py-2 text-xs font-bold text-red-600 transition-colors"
+                          >
+                            Revoke Approval
+                          </button>
+                        )}
+                        <button
+                          disabled={busy === org.id}
+                          onClick={() => void handleDeleteOrg(org.id)}
+                          className="rounded-xl bg-red-600 hover:bg-red-700 px-4 py-2 text-xs font-bold text-white transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                  {orgs.length === 0 && (
+                    <p className="p-12 text-center text-sm text-slate-400">No organizations found.</p>
+                  )}
+                </div>
+
+                <div className="border-t border-slate-100 p-4">
+                  <Pagination
+                    currentPage={orgPage}
+                    totalPages={orgTotalPages}
+                    onPageChange={(page) => void loadOrgs(page)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: EVENTS */}
+          {tab === "events" && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="rounded-3xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+                <div className="flex flex-col gap-4 border-b border-slate-100 p-6 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-800">Event Moderation</h2>
+                    <p className="mt-1 text-sm text-slate-500">Edit event details, oversee registrations, delete inappropriate events.</p>
+                  </div>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void loadEvents(0);
+                    }}
+                    className="flex gap-2"
+                  >
+                    <input
+                      value={eventSearch}
+                      onChange={(e) => setEventSearch(e.target.value)}
+                      placeholder="Search events..."
+                      className="h-11 rounded-xl bg-slate-100 px-4 text-sm focus:outline-emerald-600 focus:bg-white transition-all w-full sm:w-64"
+                    />
+                    <button className="rounded-xl bg-slate-950 px-5 text-sm font-bold text-white hover:bg-slate-800 transition-colors">
+                      Search
+                    </button>
+                  </form>
+                </div>
+
+                <div className="divide-y divide-slate-100">
+                  {events.map((e) => (
+                    <article key={e.id} className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-extrabold text-slate-800 text-sm truncate">{e.title}</h3>
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500 uppercase">
+                            {e.category}
+                          </span>
+                          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 uppercase">
+                            {e.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1">
+                          📍 {e.isOnline ? "Online" : `${e.city || "No City"}, ${e.address || ""}`} · 📅 {e.startDate ? new Date(e.startDate).toLocaleString() : "TBD"}
+                        </p>
+                        <p className="mt-2 line-clamp-2 text-xs text-slate-600 leading-relaxed">
+                          {e.description || "No description provided."}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => void handleViewEventRegs(e.id)}
+                          className="rounded-xl border border-slate-200 hover:bg-slate-50 px-4 py-2 text-xs font-bold text-slate-700 transition-colors"
+                        >
+                          Participants
+                        </button>
+                        <button
+                          onClick={() => void handleOpenEditEvent(e)}
+                          className="rounded-xl bg-slate-950 hover:bg-slate-800 px-4 py-2 text-xs font-bold text-white transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          disabled={busy === e.id}
+                          onClick={() => void handleDeleteEvent(e.id)}
+                          className="rounded-xl bg-red-600 hover:bg-red-700 px-4 py-2 text-xs font-bold text-white transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                  {events.length === 0 && (
+                    <p className="p-12 text-center text-sm text-slate-400">No events found.</p>
+                  )}
+                </div>
+
+                <div className="border-t border-slate-100 p-4">
+                  <Pagination
+                    currentPage={eventPage}
+                    totalPages={eventTotalPages}
+                    onPageChange={(page) => void loadEvents(page)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: POSTS & COMMENTS */}
+          {tab === "posts" && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="rounded-3xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+                <div className="flex flex-col gap-4 border-b border-slate-100 p-6 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-800">Content Moderation</h2>
+                    <p className="mt-1 text-sm text-slate-500">Delete inappropriate posts, review comment histories.</p>
+                  </div>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void loadPosts(0);
+                    }}
+                    className="flex gap-2"
+                  >
+                    <input
+                      value={postSearch}
+                      onChange={(e) => setPostSearch(e.target.value)}
+                      placeholder="Search post content..."
+                      className="h-11 rounded-xl bg-slate-100 px-4 text-sm focus:outline-emerald-600 focus:bg-white transition-all w-full sm:w-64"
+                    />
+                    <button className="rounded-xl bg-slate-950 px-5 text-sm font-bold text-white hover:bg-slate-800 transition-colors">
+                      Search
+                    </button>
+                  </form>
+                </div>
+
+                <div className="divide-y divide-slate-100">
+                  {posts.map((p) => (
+                    <article key={p.id} className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-extrabold text-slate-800 text-xs">
+                            {p.author?.fullName ?? "Unknown author"}
+                          </h4>
+                          <span className="text-[10px] text-slate-400">
+                            {new Date(p.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{p.content}</p>
+                        {p.mediaUrl && (
+                          <img
+                            src={p.mediaUrl}
+                            alt=""
+                            className="mt-3 max-h-48 rounded-xl object-cover border border-slate-100"
+                          />
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => void handleViewComments(p.id)}
+                          className="rounded-xl border border-slate-200 hover:bg-slate-50 px-4 py-2 text-xs font-bold text-slate-700 transition-colors"
+                        >
+                          Comments
+                        </button>
+                        <button
+                          disabled={busy === p.id}
+                          onClick={() => void handleDeletePost(p.id)}
+                          className="rounded-xl bg-red-600 hover:bg-red-700 px-4 py-2 text-xs font-bold text-white transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                  {posts.length === 0 && (
+                    <p className="p-12 text-center text-sm text-slate-400">No posts found.</p>
+                  )}
+                </div>
+
+                <div className="border-t border-slate-100 p-4">
+                  <Pagination
+                    currentPage={postPage}
+                    totalPages={postTotalPages}
+                    onPageChange={(page) => void loadPosts(page)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+        
+}
