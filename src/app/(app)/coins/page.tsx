@@ -39,5 +39,40 @@ function CoinsWallet() {
       setLoadingMore(false);
     }
   }
+    useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      setError("");
+      try {
+        const bal = await coinsApi.balance();
+        setBalance(bal);
+        await loadTransactions(0);
+      } catch (cause) {
+        setError(errorMessage(cause));
+      } finally {
+        setLoading(false);
+      }
+    }
+    void loadData();
+  }, []);
+
+  function getReasonText(reason: string) {
+    switch (reason) {
+      case "SIGNUP":
+        return "New Account Registration";
+      case "ATTENDANCE":
+        return "Event Attendance Verification";
+      case "REFERRAL":
+        return "Friend Referral Bonus";
+      case "PROFILE_COMPLETE":
+        return "Profile Completion Bonus";
+      case "ADMIN_ADJUSTMENT":
+        return "Manual Admin Adjustment";
+      default:
+        return reason;
+    }
+  }
+
+  if (loading) return <Loading label="Loading your wallet…" />;
  
 }
