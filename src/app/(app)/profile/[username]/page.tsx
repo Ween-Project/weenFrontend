@@ -504,3 +504,259 @@ export default function PublicProfilePage({
             </dl>
           </section>
         </aside>
+
+       <section className="col-span-12 rounded-2xl border border-[#E5E7EB] bg-white p-6 sm:p-8">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[#E8551B]">
+                Achievements
+              </p>
+              <h2 className="mt-2 text-2xl font-extrabold tracking-[-.02em]">
+                Badges earned
+              </h2>
+            </div>
+            <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-extrabold text-emerald-800">
+              {badges.length} unlocked
+            </span>
+          </div>
+          {badges.length ? (
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {badges.map(({ id, badge, earnedAt }) => (
+                <article
+                  key={id}
+                  className="group rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 via-white to-emerald-50 p-5 transition hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <div className="flex items-start gap-4">
+                    <span className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#FFD66B] to-[#26DE81] text-3xl shadow-inner">
+                      {badge.imageUrl ? (
+                        <img
+                          src={badge.imageUrl}
+                          alt={`${badge.name} badge`}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        "★"
+                      )}
+                    </span>
+                    <div className="min-w-0">
+                      <span className="rounded-full bg-white/80 px-2 py-1 text-[9px] font-black text-[#9A6700]">
+                        {badge.type}
+                      </span>
+                      <h3 className="mt-2 font-extrabold leading-5">
+                        {badge.name}
+                      </h3>
+                    </div>
+                  </div>
+                  <p className="mt-4 line-clamp-2 text-sm leading-6 text-[#6B7280]">
+                    {badge.description || "A Ween community achievement."}
+                  </p>
+                  <p className="mt-4 text-xs font-bold text-emerald-700">
+                    Earned {new Date(earnedAt).toLocaleDateString()}
+                  </p>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-6 rounded-2xl border border-dashed border-[#E5E7EB] bg-[#F8FAFC] p-10 text-center">
+              <div className="text-4xl">☆</div>
+              <p className="mt-3 font-extrabold">The first badge is waiting.</p>
+              <p className="mt-1 text-sm text-[#6B7280]">
+                Complete achievements and attend events to unlock badges.
+              </p>
+            </div>
+          )}
+        </section>
+
+        <section className="col-span-12">
+          <nav className="flex overflow-x-auto rounded-2xl border border-[#E5E7EB] bg-white p-1.5">
+            {tabs.map((item) => (
+              <button
+                key={item}
+                onClick={() => setTab(item)}
+                className={`min-w-max flex-1 rounded-xl px-4 py-3 text-sm font-extrabold capitalize transition ${tab === item ? "bg-emerald-50 text-emerald-800" : "text-[#6B7280] hover:bg-[#F8FAFC]"}`}
+              >
+                {item}
+              </button>
+            ))}
+          </nav>
+          {error && (
+            <div className="mt-4">
+              <Alert>{error}</Alert>
+            </div>
+          )}
+          {contentLoading ? (
+            <Loading label={`Loading ${tab}…`} />
+          ) : tab === "events" ? (
+            <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {events.map((event) => (
+                <Link
+                  key={event.id}
+                  href={`/events/${event.id}`}
+                  className="overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white"
+                >
+                  <div className="h-40 bg-emerald-100">
+                    {event.coverImageUrl && (
+                      <img
+                        src={event.coverImageUrl}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    )}
+                  </div>
+                  <div className="p-5">
+                    <h3 className="text-lg font-extrabold">{event.title}</h3>
+                    <p className="mt-2 text-sm text-[#6B7280]">
+                      {new Date(event.startDate).toLocaleDateString()} ·{" "}
+                      {event.city || "Online"}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : tab === "certificates" ? (
+            <div className="mt-6 grid gap-6 sm:grid-cols-2">
+              {certificates.map((certificate) => (
+                <article
+                  key={certificate.id}
+                  className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-6"
+                >
+                  <p className="text-xs font-extrabold uppercase tracking-widest text-amber-700">
+                    Verified certificate
+                  </p>
+                  <h3 className="mt-3 text-lg font-extrabold">
+                    {certificate.eventTitle ||
+                      `Certificate ${certificate.certificateNumber}`}
+                  </h3>
+                  <p className="mt-2 text-sm text-[#6B7280]">
+                    Issued {new Date(certificate.issuedAt).toLocaleDateString()}
+                  </p>
+                  {own && (
+                    <div className="mt-4 flex gap-2">
+                      <button
+                        onClick={() => void downloadCertificate(certificate)}
+                        className="rounded-full bg-amber-600 px-4 py-2 text-xs font-black text-white"
+                      >
+                        Download PDF
+                      </button>
+                      <button
+                        onClick={() => void deleteCertificate(certificate)}
+                        className="rounded-full border border-red-200 px-4 py-2 text-xs font-black text-red-600"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-6 grid grid-cols-2 gap-1 sm:grid-cols-3">
+              {posts.map((post) => (
+                <Link
+                  key={post.id}
+                  href={`/posts/${post.id}`}
+                  className="group relative aspect-square overflow-hidden bg-[#F8FAFC]"
+                >
+                  {post.mediaUrl ? (
+                    <img
+                      src={post.mediaUrl}
+                      alt=""
+                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="grid h-full place-items-center p-6 text-center text-sm font-bold text-[#4B5563]">
+                      {post.content}
+                    </div>
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 p-4 pt-10 text-sm font-bold text-white opacity-0 transition group-hover:opacity-100">
+                    ♥ {post.likeCount} · ◇ {post.commentCount}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+          {!contentLoading &&
+            ((tab === "events" && !events.length) ||
+              (tab === "certificates" && !certificates.length) ||
+              (!["events", "certificates"].includes(tab) && !posts.length)) && (
+              <div className="mt-6 rounded-2xl border border-dashed border-[#E5E7EB] bg-white p-12 text-center text-sm text-[#6B7280]">
+                Nothing to show here yet.
+              </div>
+            )}
+        </section>
+      </div>
+
+      {referralOpen && profile.referralCode && (
+        <div
+          className="fixed inset-0 z-[80] grid place-items-center bg-slate-950/55 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="referral-title"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setReferralOpen(false);
+          }}
+        >
+          <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div className="bg-gradient-to-br from-[#8A5B00] via-[#C48713] to-[#E5A62E] p-7 text-white">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-extrabold uppercase tracking-[.18em] text-amber-100">
+                    Your referral
+                  </p>
+                  <h2
+                    id="referral-title"
+                    className="mt-2 text-3xl font-extrabold tracking-[-.03em]"
+                  >
+                    Invite. Connect. Earn.
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReferralOpen(false)}
+                  aria-label="Close referral dialog"
+                  className="grid h-10 w-10 place-items-center rounded-full bg-white/15 text-xl"
+                >
+                  ×
+                </button>
+              </div>
+              <p className="mt-4 max-w-md text-sm leading-6 text-amber-50">
+                Share this personal link. The referral code will be filled
+                automatically when your friend opens registration.
+              </p>
+            </div>
+            <div className="p-7">
+              <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[#6B7280]">
+                Referral code
+              </p>
+              <div className="mt-2 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-center text-3xl font-black tracking-[.18em] text-[#8A5B00]">
+                {profile.referralCode}
+              </div>
+              <p className="mt-5 text-xs font-extrabold uppercase tracking-[.16em] text-[#6B7280]">
+                Shareable link
+              </p>
+              <div className="mt-2 break-all rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-4 text-sm font-medium text-[#4B5563]">
+                {referralLink}
+              </div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => void copyReferral()}
+                  className="rounded-full border border-[#1F2937] px-5 py-3 text-sm font-extrabold"
+                >
+                  {copied ? "Copied!" : "Copy link"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void shareReferral()}
+                  className="rounded-full bg-[#26DE81] px-5 py-3 text-sm font-extrabold text-[#12372a]"
+                >
+                  Share now
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
