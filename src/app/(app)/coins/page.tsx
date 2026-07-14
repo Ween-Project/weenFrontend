@@ -97,6 +97,41 @@ function CoinsWallet() {
           </div>
         </div>
       </header>
-      </div>
+      
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8">
+        <h2 className="text-lg font-black border-b pb-4 mb-4">Transaction History</h2>
+        {transactions.length === 0 ? (
+          <div className="py-12 text-center">
+            <span className="text-3xl">🪙</span>
+            <p className="mt-3 text-sm text-slate-500 font-semibold">No transactions recorded yet.</p>
+            <p className="mt-1 text-xs text-slate-400">Register for events and participate to start earning!</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {transactions.map((tx) => {
+              const positive = tx.amount >= 0;
+              return (
+                <div key={tx.id} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition hover:bg-slate-50">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-900">{getReasonText(tx.reason)}</p>
+                    <time className="mt-1 block text-xs text-slate-400">
+                      {new Date(tx.createdAt).toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      })}
+                    </time>
+                  </div>
+                  <span className={`text-sm font-black whitespace-nowrap rounded-full px-3 py-1 ${positive ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"}`}>
+                    {positive ? `+${tx.amount}` : tx.amount} 🪙
+                  </span>
+                </div>
+              );
+            })}
+           </div>
+        )}
+        </section>
     );
 }
