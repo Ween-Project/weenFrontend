@@ -1076,5 +1076,306 @@ function AdminDashboard() {
             </div>
           )}
 
-        
+          {/* TAB 6: BADGES */}
+          {tab === "badges" && (
+            <div className="animate-fadeIn">
+              <BadgeManager />
+            </div>
+          )}
+
+          {/* TAB 7: CERTIFICATES */}
+          {tab === "certificates" && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="rounded-3xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+                <div className="flex flex-col gap-4 border-b border-slate-100 p-6 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-800">Certificate Oversight</h2>
+                    <p className="mt-1 text-sm text-slate-500">Audit credentials, revoke certifications manually.</p>
+                  </div>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void loadCerts(0);
+                    }}
+                    className="flex gap-2"
+                  >
+                    <input
+                      value={certSearch}
+                      onChange={(e) => setCertSearch(e.target.value)}
+                      placeholder="Certificate number..."
+                      className="h-11 rounded-xl bg-slate-100 px-4 text-sm focus:outline-emerald-600 focus:bg-white transition-all w-full sm:w-64"
+                    />
+                    <button className="rounded-xl bg-slate-950 px-5 text-sm font-bold text-white hover:bg-slate-800 transition-colors">
+                      Search
+                    </button>
+                  </form>
+                </div>
+
+                <div className="divide-y divide-slate-100">
+                  {certs.map((c) => (
+                    <article key={c.id} className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-extrabold text-slate-800 text-sm">#{c.certificateNumber}</h3>
+                          {c.eventTitle && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{c.eventTitle}</span>}
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1">
+                          User ID: {c.userId} · Event ID: {c.eventId} · Issued: {new Date(c.issuedAt).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {c.pdfUrl && (
+                          <a
+                            href={c.pdfUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-xl border border-slate-200 hover:bg-slate-50 px-4 py-2 text-xs font-bold text-slate-700 transition-colors"
+                          >
+                            View PDF
+                          </a>
+                        )}
+                        <button
+                          disabled={busy === c.id}
+                          onClick={() => void handleRevokeCert(c.id)}
+                          className="rounded-xl bg-red-600 hover:bg-red-700 px-4 py-2 text-xs font-bold text-white transition-colors"
+                        >
+                          Revoke
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                  {certs.length === 0 && (
+                    <p className="p-12 text-center text-sm text-slate-400">No certificates found.</p>
+                  )}
+                </div>
+
+                <div className="border-t border-slate-100 p-4">
+                  <Pagination
+                    currentPage={certPage}
+                    totalPages={certTotalPages}
+                    onPageChange={(page) => void loadCerts(page)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 8: REFERRALS */}
+          {tab === "referrals" && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="rounded-3xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-100">
+                  <h2 className="text-xl font-bold text-slate-800">Referrals Log</h2>
+                  <p className="mt-1 text-sm text-slate-500">Global audit of referrals and distributed coin incentives.</p>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50/50 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                        <th className="p-4">Referrer</th>
+                        <th className="p-4">Referred</th>
+                        <th className="p-4">Coin Awarded</th>
+                        <th className="p-4">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-xs">
+                      {referrals.map((r) => (
+                        <tr key={r.id} className="hover:bg-slate-50/50">
+                          <td className="p-4 font-bold text-slate-700">{r.referrerName}</td>
+                          <td className="p-4 text-slate-500">{r.referredName}</td>
+                          <td className="p-4">
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                r.coinAwarded ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-400"
+                              }`}
+                            >
+                              {r.coinAwarded ? "Yes" : "No"}
+                            </span>
+                          </td>
+                          <td className="p-4 text-slate-400">{new Date(r.createdAt).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                      {referrals.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="p-12 text-center text-slate-400">
+                            No referrals found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="border-t border-slate-100 p-4">
+                  <Pagination
+                    currentPage={referralPage}
+                    totalPages={referralTotalPages}
+                    onPageChange={(page) => void loadReferrals(page)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 9: AI BOT ANALYTICS */}
+          {tab === "ai" && aiStats && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+                <h2 className="text-xl font-bold text-slate-800">AI Assistant Oversight</h2>
+                <p className="mt-1 text-sm text-slate-500">Live statistics showing chatbot engagement levels.</p>
+
+                <div className="grid gap-6 mt-6 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-6">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Chat Messages</p>
+                    <p className="mt-3 text-3xl font-black text-slate-800">{aiStats.totalMessages.toLocaleString()}</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-6">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Distinct Active Users</p>
+                    <p className="mt-3 text-3xl font-black text-slate-800">{aiStats.totalUsers.toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 10: AUDIT LOG */}
+          {tab === "audit" && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="rounded-3xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-100">
+                  <h2 className="text-xl font-bold text-slate-800">Security Audit Logs</h2>
+                  <p className="mt-1 text-sm text-slate-500">Immutable ledger of administrative and privilege actions.</p>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50/50 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                        <th className="p-4">Timestamp</th>
+                        <th className="p-4">Action</th>
+                        <th className="p-4">Actor</th>
+                        <th className="p-4">Target</th>
+                        <th className="p-4">Details</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-xs">
+                      {auditLogs.map((log) => (
+                        <tr key={log.id} className="hover:bg-slate-50/50">
+                          <td className="p-4 whitespace-nowrap text-slate-400">
+                            {new Date(log.createdAt).toLocaleString()}
+                          </td>
+                          <td className="p-4">
+                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700">
+                              {log.action}
+                            </span>
+                          </td>
+                          <td className="p-4 font-bold text-slate-700">@{log.actorUsername || "SYSTEM"}</td>
+                          <td className="p-4 text-slate-500">{log.targetName || "-"}</td>
+                          <td className="p-4 text-slate-500 leading-relaxed">{log.details || "-"}</td>
+                        </tr>
+                      ))}
+                      {auditLogs.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="p-12 text-center text-slate-400">
+                            No audit logs available.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="border-t border-slate-100 p-4">
+                  <Pagination
+                    currentPage={auditPage}
+                    totalPages={auditTotalPages}
+                    onPageChange={(page) => void loadAuditLogs(page)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+
+      {/* MODAL 1: USER DETAILS */}
+      {showUserModal && selectedUserDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[85vh] overflow-y-auto shadow-2xl animate-scaleUp">
+            {/* Header */}
+            <div className="border-b border-slate-100 p-6 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800">User Command Panel</h3>
+                <p className="text-xs text-slate-400 mt-1">Full profile auditing, roles, and balance adjusting.</p>
+              </div>
+              <button
+                onClick={() => setShowUserModal(false)}
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Profile Overview */}
+            <div className="p-6 space-y-6">
+              <div className="flex flex-col sm:flex-row items-center gap-4 border-b border-slate-100 pb-6">
+                <span className="grid h-16 w-16 place-items-center overflow-hidden rounded-full bg-emerald-100 font-extrabold text-emerald-800 text-xl border border-emerald-200 shadow-inner">
+                  {selectedUserDetail.user.profilePhotoUrl ? (
+                    <img src={selectedUserDetail.user.profilePhotoUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    selectedUserDetail.user.fullName.slice(0, 2).toUpperCase()
+                  )}
+                </span>
+                <div className="text-center sm:text-left min-w-0 flex-1">
+                  <h4 className="font-extrabold text-slate-800 text-base leading-tight">{selectedUserDetail.user.fullName}</h4>
+                  <p className="text-xs text-slate-400 mt-1">@{selectedUserDetail.user.username} · {selectedUserDetail.user.email}</p>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Current Role: <span className="font-bold text-slate-700">{selectedUserDetail.user.role}</span> · Coins: <span className="font-bold text-slate-700">{selectedUserDetail.user.weenCoinBalance ?? 0}</span>
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => {
+                      setNewRole(selectedUserDetail.user.role);
+                      setShowRoleModal(true);
+                    }}
+                    className="rounded-xl bg-slate-955 hover:bg-slate-800 px-4 py-2 text-xs font-bold text-white transition-colors"
+                  >
+                    Change Role
+                  </button>
+                  <button
+                    onClick={() => setShowCoinModal(true)}
+                    className="rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-bold text-white transition-colors"
+                  >
+                    Adjust Coins
+                  </button>
+                </div>
+              </div>
+
+              {/* Grid lists */}
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Badges Earned */}
+                <div className="rounded-2xl border border-slate-100 p-4">
+                  <h5 className="font-bold text-xs text-slate-400 uppercase tracking-wider mb-3">🎖️ Badges Earned ({selectedUserDetail.badges.length})</h5>
+                  <div className="space-y-2">
+                    {selectedUserDetail.badges.map((b) => (
+                      <div key={b.id} className="flex items-center gap-3 text-xs bg-slate-50 p-2 rounded-xl border border-slate-100">
+                        {b.badge.imageUrl ? (
+                          <img src={b.badge.imageUrl} alt="" className="h-8 w-8 object-contain" />
+                        ) : (
+                          <span className="text-base">🎖️</span>
+                        )}
+                        <div>
+                          <p className="font-bold text-slate-700">{b.badge.name}</p>
+                          <p className="text-[10px] text-slate-400">Earned: {new Date(b.earnedAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {selectedUserDetail.badges.length === 0 && (
+                      <p className="text-slate-400 text-xs italic">No badges earned yet.</p>
+                    )}
+                  </div>
+               
+
 }
