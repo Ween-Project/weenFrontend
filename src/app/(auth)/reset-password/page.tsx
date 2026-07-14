@@ -8,6 +8,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
+
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={<main className="grid min-h-screen place-items-center bg-slate-50 text-sm font-semibold text-slate-500">Loading password reset…</main>}>
@@ -63,7 +64,8 @@ function ResetPasswordContent() {
   }
 
   return (
-    <main className="grid min-h-screen bg-slate-50 lg:grid-cols-2">
+    <main className="relative grid min-h-screen bg-slate-50 lg:grid-cols-2">
+      
       <section className="hidden bg-[#10251e] p-12 text-white lg:flex lg:flex-col lg:justify-between">
         <Link href="/" className="text-2xl font-black text-lime">ween</Link>
         <div>

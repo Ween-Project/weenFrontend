@@ -54,7 +54,7 @@ export function Topbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/90 px-4 backdrop-blur sm:px-6 lg:px-8">
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/90 px-4 backdrop-blur transition-colors sm:px-6 lg:px-8 dark:border-slate-800 dark:bg-slate-950/85">
         <div className="flex items-center gap-3 lg:hidden">
           <button
             type="button"
@@ -101,7 +101,7 @@ export function Topbar() {
             className="fixed inset-0 bg-slate-900/35 backdrop-blur-sm transition-opacity duration-300"
           />
           {/* Drawer Panel */}
-          <div className="fixed inset-y-0 left-0 flex w-full max-w-[280px] flex-col bg-white p-6 shadow-2xl transition-transform duration-300">
+          <div className="fixed inset-y-0 left-0 flex w-full max-w-[300px] flex-col bg-white p-6 shadow-2xl transition-transform duration-300 dark:bg-slate-950">
             <div className="flex items-center justify-between border-b pb-4">
               <Link href="/dashboard" onClick={() => setDrawerOpen(false)} className="flex items-center gap-2 text-2xl font-black tracking-[-.06em] text-slate-950">
                 <span className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-600 text-base text-white">w</span>

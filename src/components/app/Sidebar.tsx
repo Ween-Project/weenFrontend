@@ -38,7 +38,7 @@ export function Sidebar() {
   const visible = links.filter((item) => item.roles.length === 0 || (account && item.roles.some((role) => role === account.role)))
     .map((item) => item.label === "Profile" && account?.username ? { ...item, href: `/profile/${account.username}` } : item);
   return <>
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[244px] border-r border-slate-200 bg-white px-4 py-6 lg:flex lg:flex-col">
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[244px] border-r border-slate-200 bg-white px-4 py-6 transition-colors lg:flex lg:flex-col dark:border-slate-800 dark:bg-slate-950">
       <Link href="/dashboard" className="flex items-center gap-2 px-3 text-2xl font-black tracking-[-.06em] text-slate-950"><span className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-600 text-base text-white">w</span>ween</Link>
       <nav className="mt-9 space-y-1.5">{visible.map((item) => { const active = pathname === item.href || pathname.startsWith(`${item.href}/`); return <Link key={item.href} href={item.href} className={`flex items-center gap-4 rounded-xl px-3 py-3 text-[15px] transition ${active ? "bg-emerald-50 font-extrabold text-emerald-800" : "font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-950"}`}><svg className="h-[22px] w-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{icons[item.label]}</svg>{item.label}</Link>; })}{!isOrganization && <button type="button" onClick={() => setQrOpen(true)} className="flex w-full items-center gap-4 rounded-xl px-3 py-3 text-[15px] font-semibold text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-800"><QrIcon />My QR code</button>}</nav>
       <Link href="/posts" className="mt-7 flex h-12 items-center justify-center rounded-full bg-emerald-600 text-sm font-extrabold text-white shadow-lg shadow-emerald-600/20">Create post</Link>
@@ -54,7 +54,7 @@ export function Sidebar() {
         </div>
       </Link>
     </aside>
-    <nav className={`fixed inset-x-0 bottom-0 z-50 grid h-[68px] ${isOrganization ? "grid-cols-4" : "grid-cols-5"} items-center border-t border-slate-200 bg-white/95 px-3 backdrop-blur lg:hidden`}>
+    <nav className={`fixed inset-x-0 bottom-0 z-50 grid h-[68px] ${isOrganization ? "grid-cols-4" : "grid-cols-5"} items-center border-t border-slate-200 bg-white/95 px-3 backdrop-blur transition-colors lg:hidden dark:border-slate-800 dark:bg-slate-950/95`}>
       <MobileLink item={visible.find((item) => item.label === "Home")} pathname={pathname} />
       <MobileLink item={visible.find((item) => item.label === "Explore")} pathname={pathname} />
       {!isOrganization && (

@@ -6,7 +6,7 @@ export const REFRESH_COOKIE = "ween_refresh";
 export const PROFILE_COOKIE = "ween_profile";
 
 export function backendUrl(path: string) {
-  const base = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5050";
+  const base = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "https://weenbackend.onrender.com";
   return `${base.replace(/\/$/, "")}${path}`;
 }
 

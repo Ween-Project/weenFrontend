@@ -7,6 +7,7 @@ import { authApi, errorMessage } from "@/lib/api";
 import { Alert } from "@/components/ui/Alert";
 import { Loading } from "@/components/ui/Loading";
 
+
 export default function VerifyEmailPage() {
   return (
     <Suspense fallback={<main className="grid min-h-screen place-items-center bg-slate-50 text-sm font-semibold text-slate-500">Loading email verification…</main>}>
@@ -54,7 +55,8 @@ function VerifyEmailContent() {
   }, [token]);
 
   return (
-    <main className="grid min-h-screen bg-slate-50 lg:grid-cols-2">
+    <main className="relative grid min-h-screen bg-slate-50 lg:grid-cols-2">
+      
       <section className="hidden bg-[#10251e] p-12 text-white lg:flex lg:flex-col lg:justify-between">
         <Link href="/" className="text-2xl font-black text-lime">ween</Link>
         <div>

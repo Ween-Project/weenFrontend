@@ -24,7 +24,7 @@ export function useStomp<T>(
         const { token } = await authApi.token();
         if (!active) return;
 
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://weenbackend.onrender.com";
         const wsUrl = backendUrl.replace(/^http/, "ws") + "/ws/websocket";
 
         const client = new Client({

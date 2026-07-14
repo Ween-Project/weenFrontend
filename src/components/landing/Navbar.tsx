@@ -33,7 +33,7 @@ export function Navbar() {
           </div>
         </div>
 
-        <div className="flex items-center gap-7">
+        <div className="flex items-center gap-3 sm:gap-5 lg:gap-7">
           <Link
             href="/register"
             className="hidden text-[13px] font-semibold text-[#1F2937] transition hover:text-[#26DE81] sm:block"
