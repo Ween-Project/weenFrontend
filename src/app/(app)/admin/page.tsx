@@ -1679,4 +1679,69 @@ function AdminDashboard() {
               </label>
             </div>
 
+            <div className="flex gap-2 justify-end mt-4">
+              <button
+                type="button"
+                onClick={() => setShowEventEditModal(false)}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={busy === "edit-event"}
+                className="rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-bold text-white"
+              >
+                Save Event
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* MODAL 6: POST COMMENTS VIEW & MODERATION */}
+      {showCommentsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl max-w-xl w-full shadow-2xl p-6 animate-scaleUp space-y-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="text-base font-extrabold text-slate-800">Post Comments ({selectedPostComments.length})</h3>
+              <button
+                onClick={() => {
+                  setShowCommentsModal(false);
+                  setCommentPostId("");
+                }}
+                className="text-slate-400 hover:text-slate-600 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="divide-y divide-slate-100">
+              {selectedPostComments.map((c) => (
+                <div key={c.id} className="py-3 text-xs flex justify-between items-start gap-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-slate-700">@{c.author.username}</p>
+                      <span className="text-[10px] text-slate-400">{new Date(c.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <p className="text-slate-600 mt-1">{c.content}</p>
+                  </div>
+                  <button
+                    disabled={busy === c.id}
+                    onClick={() => void handleDeleteComment(c.id)}
+                    className="rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 text-[10px] font-bold text-red-700 transition-colors"
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+              {selectedPostComments.length === 0 && (
+                <p className="p-8 text-center text-slate-400 text-xs italic">No comments on this post.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
