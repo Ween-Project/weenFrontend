@@ -8,6 +8,7 @@ import {
   errorMessage,
   networkApi,
   socialProfileApi,
+  authApi,
 } from "@/lib/api";
 import { Alert } from "@/components/ui/Alert";
 import { Loading } from "@/components/ui/Loading";
@@ -216,6 +217,9 @@ export default function PublicProfilePage({
 
   return (
     <div className="mx-auto w-full max-w-[1440px] text-[#1F2937]">
+      {own && !account?.isEmailVerified && (
+        <VerificationAlert />
+      )}
       <div className="grid grid-cols-12 gap-6">
         <section className="col-span-12 overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-[0_8px_30px_rgba(31,41,55,.05)]">
           <div className="relative h-44 bg-gradient-to-br from-[#12372a] via-[#176b4d] to-[#26DE81] sm:h-64">
@@ -259,12 +263,14 @@ export default function PublicProfilePage({
                   <h1 className="text-[28px] font-extrabold leading-tight tracking-[-.02em] sm:text-4xl">
                     {profile.fullName}
                   </h1>
-                  <span
-                    title="Verified Ween profile"
-                    className="grid h-6 w-6 place-items-center rounded-full bg-[#26DE81] text-xs font-black text-white"
-                  >
-                    ✓
-                  </span>
+                  {profile.isEmailVerified && (
+                    <span
+                      title="Verified Ween profile"
+                      className="grid h-6 w-6 place-items-center rounded-full bg-[#26DE81] text-xs font-black text-white"
+                    >
+                      ✓
+                    </span>
+                  )}
                 </div>
                 <p className="mt-1 text-sm font-medium text-[#6B7280]">
                   @{profile.username}
@@ -618,29 +624,41 @@ export default function PublicProfilePage({
               {certificates.map((certificate) => (
                 <article
                   key={certificate.id}
-                  className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-6"
+                  className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-6 flex flex-col justify-between"
                 >
-                  <p className="text-xs font-extrabold uppercase tracking-widest text-amber-700">
-                    Verified certificate
-                  </p>
-                  <h3 className="mt-3 text-lg font-extrabold">
-                    {certificate.eventTitle ||
-                      `Certificate ${certificate.certificateNumber}`}
-                  </h3>
-                  <p className="mt-2 text-sm text-[#6B7280]">
-                    Issued {new Date(certificate.issuedAt).toLocaleDateString()}
-                  </p>
+                  <div>
+                    {certificate.pdfUrl && (
+                      <div className="relative mb-4 overflow-hidden rounded-xl border border-amber-100 bg-amber-50/50 aspect-[1.414]">
+                        <img
+                          src={certificate.pdfUrl.replace(/\.pdf$/i, ".jpg")}
+                          alt={certificate.eventTitle || "Certificate preview"}
+                          className="h-full w-full object-cover object-top shadow-sm"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
+                    <p className="text-xs font-extrabold uppercase tracking-widest text-amber-700">
+                      Verified certificate
+                    </p>
+                    <h3 className="mt-2 text-lg font-extrabold">
+                      {certificate.eventTitle ||
+                        `Certificate ${certificate.certificateNumber}`}
+                    </h3>
+                    <p className="mt-1 text-sm text-[#6B7280]">
+                      Issued {new Date(certificate.issuedAt).toLocaleDateString()}
+                    </p>
+                  </div>
                   {own && (
                     <div className="mt-4 flex gap-2">
                       <button
                         onClick={() => void downloadCertificate(certificate)}
-                        className="rounded-full bg-amber-600 px-4 py-2 text-xs font-black text-white"
+                        className="rounded-full bg-amber-600 px-4 py-2 text-xs font-black text-white hover:bg-amber-700 transition"
                       >
                         Download PDF
                       </button>
                       <button
                         onClick={() => void deleteCertificate(certificate)}
-                        className="rounded-full border border-red-200 px-4 py-2 text-xs font-black text-red-600"
+                        className="rounded-full border border-red-200 px-4 py-2 text-xs font-black text-red-600 hover:bg-red-50 transition"
                       >
                         Delete
                       </button>
@@ -757,6 +775,52 @@ export default function PublicProfilePage({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function VerificationAlert() {
+  const [resending, setResending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleResend = async () => {
+    setResending(true);
+    setError("");
+    try {
+      await authApi.resendVerificationEmail();
+      setSent(true);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setResending(false);
+    }
+  };
+
+  return (
+    <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm font-semibold text-amber-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm">
+      <div className="flex items-start sm:items-center gap-3">
+        <span className="text-2xl mt-0.5 sm:mt-0">⚠️</span>
+        <div>
+          <p className="font-bold text-[15px]">Verify your email address</p>
+          <p className="text-xs text-amber-700 font-medium mt-0.5">We sent a verification link to your email. Click it to activate your account. If you didn't receive it, click below to resend.</p>
+        </div>
+      </div>
+      <div className="shrink-0 flex items-center gap-3">
+        {sent ? (
+          <span className="text-emerald-700 font-bold text-xs bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg">✓ Verification email sent!</span>
+        ) : (
+          <button
+            type="button"
+            disabled={resending}
+            onClick={handleResend}
+            className="rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-amber-700 transition disabled:opacity-50"
+          >
+            {resending ? "Sending..." : "Resend email"}
+          </button>
+        )}
+        {error && <span className="text-red-600 text-xs font-bold">{error}</span>}
+      </div>
     </div>
   );
 }
