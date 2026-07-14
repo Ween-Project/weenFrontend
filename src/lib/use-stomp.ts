@@ -83,6 +83,9 @@ export function useStomp<T>(
       }, pollInterval);
     };
 
+    // Trigger initial load immediately on mount
+    fallbackPoll();
+
     void startStomp();
 
     return () => {

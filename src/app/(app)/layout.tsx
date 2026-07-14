@@ -17,7 +17,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (isLoading || !isAuthenticated) {
     return (
-      <div className="grid min-h-screen place-items-center bg-slate-50 transition-colors dark:bg-slate-950">
+      <div className="grid min-h-screen place-items-center bg-slate-50 transition-colors">
         <div className="flex items-center gap-3 text-sm font-semibold text-slate-500">
           <span className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-700 border-t-transparent" />
           Loading your workspace…
@@ -27,7 +27,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f8fa] text-slate-900 transition-colors dark:bg-slate-950 dark:text-slate-100">
+    <div className="min-h-screen bg-[#f7f8fa] text-slate-900 transition-colors">
       <NavigationProgress />
       <Sidebar />
       <div className="lg:pl-[244px]">
