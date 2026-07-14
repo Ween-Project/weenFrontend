@@ -1376,6 +1376,307 @@ function AdminDashboard() {
                       <p className="text-slate-400 text-xs italic">No badges earned yet.</p>
                     )}
                   </div>
-               
+                </div>
+
+                {/* Certificates */}
+                <div className="rounded-2xl border border-slate-100 p-4">
+                  <h5 className="font-bold text-xs text-slate-400 uppercase tracking-wider mb-3">🎓 Certificates Issued ({selectedUserDetail.certificates.length})</h5>
+                  <div className="space-y-2">
+                    {selectedUserDetail.certificates.map((c) => (
+                      <div key={c.id} className="flex justify-between items-center text-xs bg-slate-50 p-2 rounded-xl border border-slate-100">
+                        <div>
+                          <p className="font-bold text-slate-700">#{c.certificateNumber}</p>
+                          <p className="text-[10px] text-slate-400">Issued: {new Date(c.issuedAt).toLocaleDateString()}</p>
+                        </div>
+                        {c.pdfUrl && (
+                          <a
+                            href={c.pdfUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[10px] font-bold text-emerald-600 hover:underline"
+                          >
+                            PDF
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                    {selectedUserDetail.certificates.length === 0 && (
+                      <p className="text-slate-400 text-xs italic">No certificates issued yet.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Attended Events */}
+              <div className="rounded-2xl border border-slate-100 p-4">
+                <h5 className="font-bold text-xs text-slate-400 uppercase tracking-wider mb-3">📅 Events Attended ({selectedUserDetail.eventsAttended.length})</h5>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {selectedUserDetail.eventsAttended.map((ev) => (
+                    <div key={ev.id} className="text-xs bg-slate-50 p-3 rounded-xl border border-slate-100">
+                      <p className="font-bold text-slate-700 truncate">{ev.title}</p>
+                      <p className="text-[10px] text-slate-400 mt-1">📍 {ev.city} · 📅 {new Date(ev.startDate).toLocaleDateString()}</p>
+                    </div>
+                  ))}
+                  {selectedUserDetail.eventsAttended.length === 0 && (
+                    <p className="text-slate-400 text-xs italic md:col-span-2">No events registered.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Coin Transactions */}
+              <div className="rounded-2xl border border-slate-100 p-4">
+                <h5 className="font-bold text-xs text-slate-400 uppercase tracking-wider mb-3">🪙 Coin Transaction History ({selectedUserDetail.coinTransactions.length})</h5>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {selectedUserDetail.coinTransactions.map((tx) => (
+                    <div key={tx.id} className="flex justify-between items-center text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                      <div>
+                        <p className="font-bold text-slate-700 capitalize">{tx.reason.toLowerCase().replace("_", " ")}</p>
+                        <p className="text-[10px] text-slate-400">{new Date(tx.createdAt).toLocaleString()}</p>
+                      </div>
+                      <span
+                        className={`font-black ${
+                          tx.amount >= 0 ? "text-emerald-600" : "text-red-600"
+                        }`}
+                      >
+                        {tx.amount >= 0 ? `+${tx.amount}` : tx.amount}
+                      </span>
+                    </div>
+                  ))}
+                  {selectedUserDetail.coinTransactions.length === 0 && (
+                    <p className="text-slate-400 text-xs italic">No transactions recorded.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: ADJUST COINS */}
+      {showCoinModal && selectedUserDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <form
+            onSubmit={handleAdjustCoins}
+            className="bg-white rounded-3xl max-w-md w-full shadow-2xl p-6 animate-scaleUp space-y-4"
+          >
+            <h3 className="text-base font-extrabold text-slate-800">Adjust Coin Balance</h3>
+            <p className="text-xs text-slate-400">
+              Manually add or remove WeenCoins from <b>{selectedUserDetail.user.fullName}</b>.
+            </p>
+
+            {error && (
+              <div className="text-xs font-bold text-red-600 bg-red-50 p-3 rounded-xl border border-red-200">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500 uppercase">Amount (Use negative for subtraction)</label>
+              <input
+                type="number"
+                value={coinAmount}
+                onChange={(e) => setCoinAmount(parseInt(e.target.value) || 0)}
+                className="w-full h-11 bg-slate-100 rounded-xl px-4 text-sm focus:outline-emerald-600 focus:bg-white"
+                required
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500 uppercase">Auditable Reason</label>
+              <input
+                type="text"
+                value={coinReason}
+                onChange={(e) => setCoinReason(e.target.value)}
+                placeholder="Compensation for event postponement"
+                className="w-full h-11 bg-slate-100 rounded-xl px-4 text-sm focus:outline-emerald-600 focus:bg-white"
+                required
+              />
+            </div>
+
+            <div className="flex gap-2 justify-end mt-4">
+              <button
+                type="button"
+                onClick={() => setShowCoinModal(false)}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={busy === "coins"}
+                className="rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-bold text-white"
+              >
+                Apply Adjustment
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* MODAL 3: CHANGE ROLE */}
+      {showRoleModal && selectedUserDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <form
+            onSubmit={handleChangeRole}
+            className="bg-white rounded-3xl max-w-md w-full shadow-2xl p-6 animate-scaleUp space-y-4"
+          >
+            <h3 className="text-base font-extrabold text-slate-800">Privilege Role Settings</h3>
+            <p className="text-xs text-slate-400">
+              Escalate or revoke privileges for <b>{selectedUserDetail.user.fullName}</b>.
+            </p>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500 uppercase">Security Role</label>
+              <select
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+                className="w-full h-11 bg-slate-100 rounded-xl px-4 text-sm focus:outline-emerald-600 focus:bg-white"
+              >
+                <option value="VOLUNTEER">VOLUNTEER</option>
+                <option value="ORGANIZER">ORGANIZER</option>
+                <option value="ORGANIZATION_ADMIN">ORGANIZATION_ADMIN</option>
+                <option value="ADMIN">ADMIN (Super Admin)</option>
+              </select>
+            </div>
+
+            <div className="flex gap-2 justify-end mt-4">
+              <button
+                type="button"
+                onClick={() => setShowRoleModal(false)}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-600"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={busy === "role"}
+                className="rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-bold text-white"
+              >
+                Save Role
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* MODAL 4: EVENT PARTICIPANTS */}
+      {showEventRegsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl max-w-xl w-full shadow-2xl p-6 animate-scaleUp space-y-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h3 className="text-base font-extrabold text-slate-800">Event Registrants</h3>
+              <button
+                onClick={() => setShowEventRegsModal(false)}
+                className="text-slate-400 hover:text-slate-600 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="divide-y divide-slate-100">
+              {selectedEventRegs.map((reg) => (
+                <div key={reg.id} className="flex justify-between items-center py-3 text-xs">
+                  <div>
+                    <p className="font-bold text-slate-700">{reg.fullName}</p>
+                    <p className="text-[10px] text-slate-400">@{reg.username}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] text-slate-400">Registered: {new Date(reg.registeredAt).toLocaleDateString()}</p>
+                    <span
+                      className={`inline-block rounded-full px-2 py-0.5 text-[8px] font-bold mt-1 ${
+                        reg.isJoined ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-400"
+                      }`}
+                    >
+                      {reg.isJoined ? "Checked-In" : "Registered"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {selectedEventRegs.length === 0 && (
+                <p className="p-8 text-center text-slate-400 text-xs italic">No participants registered yet.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 5: EDIT EVENT */}
+      {showEventEditModal && selectedEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <form
+            onSubmit={handleSaveEvent}
+            className="bg-white rounded-3xl max-w-lg w-full shadow-2xl p-6 animate-scaleUp space-y-4 max-h-[90vh] overflow-y-auto"
+          >
+            <h3 className="text-base font-extrabold text-slate-800">Edit Event Overrides</h3>
+            <p className="text-xs text-slate-400">Modify details or update status override platform-wide.</p>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500 uppercase">Event Title</label>
+              <input
+                type="text"
+                value={eventEditTitle}
+                onChange={(e) => setEventEditTitle(e.target.value)}
+                className="w-full h-11 bg-slate-100 rounded-xl px-4 text-sm focus:outline-emerald-600 focus:bg-white"
+                required
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500 uppercase">Description</label>
+              <textarea
+                value={eventEditDesc}
+                onChange={(e) => setEventEditDesc(e.target.value)}
+                rows={3}
+                className="w-full bg-slate-100 rounded-xl p-3 text-sm focus:outline-emerald-600 focus:bg-white"
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500 uppercase">City</label>
+                <input
+                  type="text"
+                  value={eventEditCity}
+                  onChange={(e) => setEventEditCity(e.target.value)}
+                  className="w-full h-11 bg-slate-100 rounded-xl px-4 text-sm focus:outline-emerald-600"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500 uppercase">Status Override</label>
+                <select
+                  value={eventEditStatus}
+                  onChange={(e) => setEventEditStatus(e.target.value)}
+                  className="w-full h-11 bg-slate-100 rounded-xl px-4 text-sm focus:outline-emerald-600"
+                >
+                  <option value="DRAFT">DRAFT</option>
+                  <option value="PUBLISHED">PUBLISHED</option>
+                  <option value="CANCELLED">CANCELLED</option>
+                  <option value="COMPLETED">COMPLETED</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-500 uppercase">Address / URL</label>
+              <input
+                type="text"
+                value={eventEditAddress}
+                onChange={(e) => setEventEditAddress(e.target.value)}
+                className="w-full h-11 bg-slate-100 rounded-xl px-4 text-sm focus:outline-emerald-600"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <input
+                type="checkbox"
+                id="editOnline"
+                checked={eventEditOnline}
+                onChange={(e) => setEventEditOnline(e.target.checked)}
+                className="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4"
+              />
+              <label htmlFor="editOnline" className="text-xs font-bold text-slate-600">
+                This is an online event
+              </label>
+            </div>
 
 }
