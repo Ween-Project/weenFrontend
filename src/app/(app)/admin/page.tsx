@@ -243,5 +243,268 @@ function AdminDashboard() {
     }
   }
 
-  
+  async function loadReferrals(nextPage = 0) {
+    try {
+      const res = await adminApi.referrals(nextPage);
+      setReferrals(res.content);
+      setReferralPage(nextPage);
+      setReferralTotalPages(res.totalPages);
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
+  async function loadAuditLogs(nextPage = 0) {
+    try {
+      const res = await adminApi.auditLogs(nextPage);
+      setAuditLogs(res.content);
+      setAuditPage(nextPage);
+      setAuditTotalPages(res.totalPages);
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
+  async function loadAiStats() {
+    try {
+      const s = await adminApi.aiStats();
+      setAiStats(s);
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
+  // Trigger loading based on tab selection
+  useEffect(() => {
+    setError("");
+    if (tab === "overview") void loadOverview();
+    else if (tab === "users") void loadUsers(0);
+    else if (tab === "orgs") void loadOrgs(0);
+    else if (tab === "events") void loadEvents(0);
+    else if (tab === "posts") void loadPosts(0);
+    else if (tab === "certificates") void loadCerts(0);
+    else if (tab === "referrals") void loadReferrals(0);
+    else if (tab === "audit") void loadAuditLogs(0);
+    else if (tab === "ai") void loadAiStats();
+  }, [tab]);
+
+  // Actions
+  async function handleVerifyOrg(org: AdminOrganization, verify: boolean) {
+    setBusy(org.id);
+    setError("");
+    try {
+      const updated = await adminOrganizationsApi.verify(org.id, verify, verify ? "Approved by Super Admin" : "Approval revoked");
+      setOrgs((curr) => curr.map((item) => (item.id === org.id ? updated : item)));
+      notify(verify ? "Organization verified" : "Verification revoked", org.organizationName);
+      void loadOverview();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function handleRejectOrg(orgId: string) {
+    const reason = prompt("Enter rejection reason:");
+    if (reason === null) return;
+    setBusy(orgId);
+    setError("");
+    try {
+      await adminOrganizationsApi.reject(orgId, reason.trim());
+      setOrgs((curr) => curr.filter((item) => item.id !== orgId));
+      notify("Organization rejected", reason.trim() || "No reason supplied");
+      void loadOverview();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function handleDeleteOrg(orgId: string) {
+    if (!confirm("🚨 WARNING: This will permanently delete this organization, including all their events, chat channels, and posts! This action CANNOT be undone. Are you absolutely sure?")) return;
+    setBusy(orgId);
+    setError("");
+    try {
+      await adminApi.deleteOrganization(orgId);
+      setOrgs((curr) => curr.filter((o) => o.id !== orgId));
+      notify("Organization deleted", "Related records were removed.");
+      void loadOverview();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function handleBanUser(userId: string) {
+    const reason = prompt("Enter ban reason:");
+    if (reason === null) return;
+    setBusy(userId);
+    setError("");
+    try {
+      await adminApi.banUser(userId, reason.trim());
+      setUsers((curr) => curr.map((u) => (u.id === userId ? { ...u, banned: true, banReason: reason } : u)));
+      notify("User suspended", reason.trim() || "Account access has been disabled.");
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function handleUnbanUser(userId: string) {
+    if (!confirm("Unban this user?")) return;
+    setBusy(userId);
+    setError("");
+    try {
+      await adminApi.unbanUser(userId);
+      setUsers((curr) => curr.map((u) => (u.id === userId ? { ...u, banned: false, banReason: undefined } : u)));
+      notify("User reactivated", "Account access has been restored.");
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function handleDeleteUser(userId: string) {
+    if (!confirm("🚨 WARNING: This will permanently delete this user, including their chat history, certificates, badges, referrals, coin transactions, and posts! This action cannot be undone. Proceed?")) return;
+    setBusy(userId);
+    setError("");
+    try {
+      await adminApi.deleteUser(userId);
+      setUsers((curr) => curr.filter((u) => u.id !== userId));
+      notify("User deleted", "Related records were removed.");
+      void loadOverview();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function handleViewUserDetail(userId: string) {
+    setBusy(userId);
+    setError("");
+    try {
+      const details = await adminApi.userDetail(userId);
+      setSelectedUserDetail(details);
+      setShowUserModal(true);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function handleAdjustCoins(e: FormEvent) {
+    e.preventDefault();
+    if (!selectedUserDetail) return;
+    const userId = selectedUserDetail.user.id;
+    setBusy("coins");
+    setError("");
+    try {
+      await adminApi.adjustCoins(userId, coinAmount, coinReason);
+      setShowCoinModal(false);
+      setCoinReason("");
+      notify("Coin balance updated", `${coinAmount > 0 ? "+" : ""}${coinAmount} WeenCoins applied.`);
+      // Refresh user details
+      const details = await adminApi.userDetail(userId);
+      setSelectedUserDetail(details);
+      // Refresh users table if tab is active
+      void loadUsers(userPage);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function handleChangeRole(e: FormEvent) {
+    e.preventDefault();
+    if (!selectedUserDetail) return;
+    const userId = selectedUserDetail.user.id;
+    setBusy("role");
+    setError("");
+    try {
+      await adminApi.changeRole(userId, newRole);
+      setShowRoleModal(false);
+      notify("Role updated", `New role: ${newRole}`);
+      const details = await adminApi.userDetail(userId);
+      setSelectedUserDetail(details);
+      void loadUsers(userPage);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function handleViewEventRegs(eventId: string) {
+    setBusy(eventId);
+    setError("");
+    try {
+      const res = await adminApi.eventRegistrations(eventId, 0);
+      setSelectedEventRegs(res.content);
+      setShowEventRegsModal(true);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function handleDeleteEvent(eventId: string) {
+    if (!confirm("Are you sure you want to permanently delete this event and revoke all associated certificates?")) return;
+    setBusy(eventId);
+    setError("");
+    try {
+      await adminApi.deleteEvent(eventId);
+      setEvents((curr) => curr.filter((e) => e.id !== eventId));
+      notify("Event deleted");
+      void loadOverview();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function handleOpenEditEvent(event: EventSummary) {
+    setSelectedEvent(event);
+    setEventEditTitle(event.title);
+    setEventEditDesc(event.description || "");
+    setEventEditCity(event.city || "");
+    setEventEditAddress(event.address || "");
+    setEventEditOnline(event.isOnline || false);
+    setEventEditStatus(event.status || "PUBLISHED");
+    setShowEventEditModal(true);
+  }
+
+  async function handleSaveEvent(e: FormEvent) {
+    e.preventDefault();
+    if (!selectedEvent) return;
+    setBusy("edit-event");
+    setError("");
+    try {
+      await adminApi.updateEvent(selectedEvent.id, {
+        title: eventEditTitle,
+        description: eventEditDesc,
+        city: eventEditCity,
+        address: eventEditAddress,
+        isOnline: eventEditOnline,
+        status: eventEditStatus as any
+      });
+      setShowEventEditModal(false);
+      notify("Event updated", eventEditTitle);
+      void loadEvents(eventPage);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy("");
+    }
+  }
+
+ 
 }
