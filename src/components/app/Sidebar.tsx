@@ -27,7 +27,7 @@ const links = [
   { href: "/notifications", label: "Notifications", roles: [] },
   { href: "/ai", label: "AI", roles: ["VOLUNTEER", "ORGANIZER", "ORGANIZATION_ADMIN", "ADMIN"] },
   { href: "/coins", label: "Wallet", roles: ["VOLUNTEER", "ADMIN"] },
-  { href: "/settings", label: "Profile", roles: [] },
+  { href: "/settings", label: "Profile", roles: ["VOLUNTEER", "ORGANIZER", "ADMIN"] },
   { href: "/admin", label: "Admin", roles: ["ADMIN"] },
 ] as const;
 
@@ -106,8 +106,10 @@ export function Sidebar() {
           </button>
         )}
       </nav>
-      <Link href="/posts" className="mt-7 flex h-12 items-center justify-center rounded-full bg-emerald-600 text-sm font-extrabold text-white shadow-lg shadow-emerald-600/20">Create post</Link>
-      <Link href={account?.username ? `/profile/${account.username}` : "/settings"} className="mt-auto flex items-center gap-3 rounded-2xl border border-slate-200 p-3 transition hover:bg-slate-50">
+      {!isOrganization && (
+        <Link href="/posts" className="mt-7 flex h-12 items-center justify-center rounded-full bg-emerald-600 text-sm font-extrabold text-white shadow-lg shadow-emerald-600/20">Create post</Link>
+      )}
+      <Link href={isOrganization ? "/settings" : account?.username ? `/profile/${account.username}` : "/settings"} className="mt-auto flex items-center gap-3 rounded-2xl border border-slate-200 p-3 transition hover:bg-slate-50">
         {account?.profilePhotoUrl || account?.logoUrl ? (
           <img src={account.profilePhotoUrl || account.logoUrl} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
         ) : (
