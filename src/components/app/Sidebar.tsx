@@ -28,7 +28,7 @@ const links = [
   { href: "/notifications", label: "Notifications", roles: [] },
   { href: "/ai", label: "AI", roles: ["VOLUNTEER", "ORGANIZER", "ORGANIZATION_ADMIN", "ADMIN"] },
   { href: "/coins", label: "Wallet", roles: ["VOLUNTEER", "ADMIN"] },
-  { href: "/settings", label: "Profile", roles: ["VOLUNTEER", "ORGANIZER", "ADMIN"] },
+  { href: "/settings", label: "Profile", roles: ["VOLUNTEER", "ORGANIZER", "ADMIN", "ORGANIZATION_ADMIN"] },
   { href: "/admin", label: "Admin", roles: ["ADMIN"] },
   { href: "/dashboard/team", label: "Team", roles: ["ORGANIZATION_ADMIN"] },
 ] as const;
@@ -111,7 +111,7 @@ export function Sidebar() {
       {!isOrganization && (
         <Link href="/posts" className="mt-7 flex h-12 items-center justify-center rounded-full bg-emerald-600 text-sm font-extrabold text-white shadow-lg shadow-emerald-600/20">Create post</Link>
       )}
-      <Link href={isOrganization ? "/settings" : account?.username ? `/profile/${account.username}` : "/settings"} className="mt-auto flex items-center gap-3 rounded-2xl border border-slate-200 p-3 transition hover:bg-slate-50">
+      <Link href={account?.username ? `/profile/${account.username}` : "/settings"} className="mt-auto flex items-center gap-3 rounded-2xl border border-slate-200 p-3 transition hover:bg-slate-50">
         {account?.profilePhotoUrl || account?.logoUrl ? (
           <img src={account.profilePhotoUrl || account.logoUrl} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
         ) : (
@@ -123,11 +123,13 @@ export function Sidebar() {
         </div>
       </Link>
     </aside>
-    <nav className={`fixed inset-x-0 bottom-0 z-50 grid h-[68px] ${isOrganization ? "grid-cols-4" : "grid-cols-5"} items-center border-t border-slate-200 bg-white/95 px-3 backdrop-blur transition-colors lg:hidden`}>
+    <nav className="fixed inset-x-0 bottom-0 z-50 grid h-[68px] grid-cols-5 items-center border-t border-slate-200 bg-white/95 px-3 backdrop-blur transition-colors lg:hidden">
       <MobileLink item={visible.find((item) => item.label === "Home")} pathname={pathname} />
       <MobileLink item={visible.find((item) => item.label === (isOrganization ? "Team" : "Explore"))} pathname={pathname} />
-      {!isOrganization && (
+      {!isOrganization ? (
         <button type="button" onClick={() => setQrOpen(true)} aria-label="Generate QR code" className="mx-auto -mt-5 grid h-16 w-16 place-items-center rounded-full border-[5px] border-[#f7f8fa] bg-emerald-600 text-white shadow-xl shadow-emerald-600/25"><QrIcon large /></button>
+      ) : (
+        <MobileLink item={visible.find((item) => item.label === "Profile")} pathname={pathname} />
       )}
       <MobileLink item={visible.find((item) => item.label === "Messages")} pathname={pathname} unreadCount={unreadMessagesCount} />
       <MobileLink item={visible.find((item) => item.label === "Notifications")} pathname={pathname} hasBadge={hasUnreadNotifications} />
