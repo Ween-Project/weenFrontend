@@ -74,7 +74,7 @@ export default function ApproveInvitationPage() {
               <h2 className="text-2xl font-black text-slate-900">Oops!</h2>
               <p className="mt-2 text-slate-500">{errorMessage}</p>
               <Link href="/" className="mt-8 block w-full">
-                <Button variant="outline" className="w-full">Return Home</Button>
+                <Button className="w-full">Return Home</Button>
               </Link>
             </div>
           )}
