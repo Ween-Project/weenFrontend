@@ -16,6 +16,7 @@ import type {
   GroupMessage,
   Notification,
   PublicProfile,
+  OrganizationProfile,
   LeaderboardEntry,
   QrPayload,
   RegistrationInput,
@@ -311,10 +312,10 @@ export const networkApi = {
   search: (query = "", page = 0) => backend<Page<PublicProfile>>(`/api/v1/users/search?query=${encodeURIComponent(query)}&page=${page}&size=20`),
   profile: async (username: string) => {
     try {
-      return await backend<PublicProfile>(`/api/v1/users/@${encodeURIComponent(username)}`);
+      return await backend<PublicProfile | OrganizationProfile>(`/api/v1/users/@${encodeURIComponent(username)}`);
     } catch (e: any) {
       if (e.status === 404) {
-        return await backend<PublicProfile>(`/api/v1/organizations/@${encodeURIComponent(username)}`);
+        return await backend<PublicProfile | OrganizationProfile>(`/api/v1/organizations/@${encodeURIComponent(username)}`);
       }
       throw e;
     }

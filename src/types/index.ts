@@ -448,3 +448,18 @@ export type ResetPasswordRequest = {
   confirmNewPassword: string;
 };
 
+export type OrganizationProfile = {
+  id: string;
+  username: string;
+  organizationName: string;
+  description?: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+  email?: string;
+  website?: string;
+  role?: string;
+  isVerified?: boolean;
+  verificationNote?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};

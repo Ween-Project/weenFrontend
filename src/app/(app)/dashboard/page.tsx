@@ -386,7 +386,7 @@ function OrganizationDashboard() {
           organizationsApi.get(account.id)
         ]);
         setEvents(eventList);
-        setIsVerified(profileDetails.isVerified);
+        setIsVerified(profileDetails.isVerified || false);
       } catch (err) {
         setError(errorMessage(err));
       } finally {

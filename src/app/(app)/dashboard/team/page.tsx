@@ -159,9 +159,9 @@ export default function TeamPage() {
             
             <form onSubmit={handleInvite} className="mt-6 space-y-4">
               <div>
-                <label htmlFor="identifier" className="mb-2 block text-sm font-semibold text-slate-700">Email or Username</label>
                 <Input
                   id="identifier"
+                  label="Email or Username"
                   placeholder="johndoe or john@example.com"
                   value={inviteIdentifier}
                   onChange={(e) => setInviteIdentifier(e.target.value)}

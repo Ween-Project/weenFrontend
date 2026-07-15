@@ -17,6 +17,7 @@ import type {
   EventSummary,
   Post,
   PublicProfile,
+  OrganizationProfile,
   UserBadge,
 } from "@/types";
 
@@ -64,7 +65,7 @@ export default function PublicProfilePage({
   params: { username: string };
 }) {
   const { account } = useAuth();
-  const [profile, setProfile] = useState<PublicProfile | null>(null);
+  const [profile, setProfile] = useState<PublicProfile | OrganizationProfile | null>(null);
   const [tab, setTab] = useState<Tab>("posts");
   const [posts, setPosts] = useState<Post[]>([]);
   const [events, setEvents] = useState<EventSummary[]>([]);
@@ -77,15 +78,24 @@ export default function PublicProfilePage({
   const [copied, setCopied] = useState(false);
   const username = decodeURIComponent(params.username);
   const own = account?.username === username;
-  const skills = useMemo(() => tags(profile?.skills), [profile?.skills]);
+  
+  const isOrg = profile && "organizationName" in profile;
+  const orgProfile = isOrg ? (profile as OrganizationProfile) : null;
+  const userProfile = isOrg ? null : (profile as PublicProfile);
+  
+  const displayName = isOrg ? orgProfile!.organizationName : userProfile?.fullName || "";
+  const displayBio = isOrg ? orgProfile!.description : userProfile?.bio;
+  const displayPhoto = isOrg ? orgProfile!.logoUrl : userProfile?.profilePhotoUrl;
+  
+  const skills = useMemo(() => tags(userProfile?.skills), [userProfile?.skills]);
   const interests = useMemo(
-    () => tags(profile?.interests),
-    [profile?.interests],
+    () => tags(userProfile?.interests),
+    [userProfile?.interests],
   );
   const referralLink =
-    typeof window === "undefined" || !profile?.referralCode
+    typeof window === "undefined" || !userProfile?.referralCode
       ? ""
-      : `${window.location.origin}/register?refferalCode=${encodeURIComponent(profile.referralCode)}`;
+      : `${window.location.origin}/register?refferalCode=${encodeURIComponent(userProfile.referralCode)}`;
 
   useEffect(() => {
     networkApi
@@ -177,28 +187,28 @@ export default function PublicProfilePage({
   }
 
   async function toggleFollow() {
-    if (!profile) return;
+    if (!profile || isOrg) return;
     try {
-      if (profile.following) {
+      if (userProfile!.following) {
         await networkApi.unfollow(profile.id);
         setProfile((current) =>
           current
-            ? {
+            ? ({
                 ...current,
                 following: false,
-                followerCount: Math.max(0, (current.followerCount || 0) - 1),
-              }
+                followerCount: Math.max(0, (userProfile!.followerCount || 0) - 1),
+              } as PublicProfile)
             : null,
         );
       } else {
         await networkApi.follow(profile.id);
         setProfile((current) =>
           current
-            ? {
+            ? ({
                 ...current,
                 following: true,
-                followerCount: (current.followerCount || 0) + 1,
-              }
+                followerCount: (userProfile!.followerCount || 0) + 1,
+              } as PublicProfile)
             : null,
         );
       }
@@ -210,10 +220,12 @@ export default function PublicProfilePage({
   if (loading) return <Loading label="Loading profile…" />;
   if (!profile) return <Alert>{error || "Profile not found."}</Alert>;
 
-  const tabs: Tab[] = own
-    ? ["posts", "reposts", "events", "certificates", "liked", "saved"]
-    : ["posts", "reposts", "events", "certificates"];
-  const initials = profile.fullName.slice(0, 2).toUpperCase();
+  const tabs: Tab[] = isOrg
+    ? ["posts", "events"]
+    : own
+      ? ["posts", "reposts", "events", "certificates", "liked", "saved"]
+      : ["posts", "reposts", "events", "certificates"];
+  const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
     <div className="mx-auto w-full max-w-[1440px] text-[#1F2937]">
@@ -226,7 +238,7 @@ export default function PublicProfilePage({
             {profile.bannerUrl && (
               <img
                 src={profile.bannerUrl}
-                alt={`${profile.fullName}'s banner`}
+                alt={`${displayName}'s banner`}
                 className="h-full w-full object-cover"
               />
             )}
@@ -248,10 +260,10 @@ export default function PublicProfilePage({
           <div className="relative px-5 pb-7 sm:px-8 lg:px-10">
             <div className="-mt-14 flex flex-col gap-5 sm:-mt-20 sm:flex-row sm:items-end">
               <span className="grid h-28 w-28 shrink-0 place-items-center overflow-hidden rounded-full border-[5px] border-white bg-[#DDFBEA] text-3xl font-extrabold text-emerald-900 shadow-sm sm:h-40 sm:w-40">
-                {profile.profilePhotoUrl ? (
+                {displayPhoto ? (
                   <img
-                    src={profile.profilePhotoUrl}
-                    alt={profile.fullName}
+                    src={displayPhoto}
+                    alt={displayName}
                     className="h-full w-full object-cover"
                   />
                 ) : (
@@ -261,7 +273,7 @@ export default function PublicProfilePage({
               <div className="min-w-0 flex-1 pb-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-[28px] font-extrabold leading-tight tracking-[-.02em] sm:text-4xl">
-                    {profile.fullName}
+                    {displayName}
                   </h1>
                   {profile.isEmailVerified && (
                     <span
@@ -285,7 +297,7 @@ export default function PublicProfilePage({
                     >
                       Edit profile
                     </Link>
-                    {profile.referralCode && (
+                    {!isOrg && userProfile?.referralCode && (
                       <button
                         type="button"
                         onClick={() => setReferralOpen(true)}
@@ -304,11 +316,11 @@ export default function PublicProfilePage({
                       onClick={() => void toggleFollow()}
                       className="rounded-full bg-[#26DE81] px-6 py-2.5 text-sm font-extrabold text-[#12372a] transition hover:brightness-95"
                     >
-                      {profile.following ? "Following" : "Follow"}
+                      {(isOrg ? false : userProfile?.following) ? "Following" : "Follow"}
                     </button>
-                    {profile.canMessage && (
+                    {!isOrg && userProfile?.canMessage && (
                       <Link
-                        href={`/messages/${profile.id}?username=${profile.username}&fullName=${encodeURIComponent(profile.fullName)}&photoUrl=${encodeURIComponent(profile.profilePhotoUrl || "")}`}
+                        href={`/messages/${profile.id}?username=${profile.username}&fullName=${encodeURIComponent(displayName)}&photoUrl=${encodeURIComponent(displayPhoto || "")}`}
                         className="rounded-full border border-[#1F2937] px-6 py-2.5 text-sm font-bold"
                       >
                         Message
@@ -321,28 +333,38 @@ export default function PublicProfilePage({
 
             <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
               <div>
-                <p className="text-lg font-semibold leading-7">
-                  {profile.major || "Ween community member"}
-                  {profile.course ? ` · ${profile.course}` : ""}
-                </p>
-                {profile.bio && (
-                  <p className="mt-3 max-w-3xl text-base leading-7 text-[#4B5563]">
-                    {profile.bio}
+                {!isOrg && (
+                  <p className="text-lg font-semibold leading-7">
+                    {userProfile?.major || "Ween community member"}
+                    {userProfile?.course ? ` · ${userProfile?.course}` : ""}
                   </p>
                 )}
-                <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-semibold">
-                  <span className="text-emerald-700">
-                    {profile.followerCount || 0} followers
-                  </span>
-                  <span className="text-emerald-700">
-                    {profile.followingCount || 0} following
-                  </span>
-                  <span className="text-[#B7791F]">
-                    {profile.weenCoinBalance || 0} impact coins
-                  </span>
-                </div>
+                {isOrg && orgProfile?.email && (
+                  <p className="text-lg font-semibold leading-7">
+                    {orgProfile.email}
+                    {orgProfile.website ? ` · ${orgProfile.website}` : ""}
+                  </p>
+                )}
+                {displayBio && (
+                  <p className="mt-3 max-w-3xl text-base leading-7 text-[#4B5563]">
+                    {displayBio}
+                  </p>
+                )}
+                {!isOrg && (
+                  <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-semibold">
+                    <span className="text-emerald-700">
+                      {userProfile?.followerCount || 0} followers
+                    </span>
+                    <span className="text-emerald-700">
+                      {userProfile?.followingCount || 0} following
+                    </span>
+                    <span className="text-[#B7791F]">
+                      {userProfile?.weenCoinBalance || 0} impact coins
+                    </span>
+                  </div>
+                )}
               </div>
-              {profile.university && (
+              {!isOrg && userProfile?.university && (
                 <div className="flex items-start gap-3 rounded-xl bg-[#F8FAFC] p-4">
                   <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-white text-emerald-700 shadow-sm">
                     <Icon>
@@ -355,7 +377,7 @@ export default function PublicProfilePage({
                       Education
                     </p>
                     <p className="mt-1 text-sm font-extrabold leading-5">
-                      {profile.university}
+                      {userProfile.university}
                     </p>
                   </div>
                 </div>
@@ -380,9 +402,9 @@ export default function PublicProfilePage({
               )}
             </div>
             <p className="mt-4 text-base leading-7 text-[#4B5563]">
-              {profile.bio || "This member has not added a bio yet."}
+              {displayBio || (isOrg ? "This organization has not added a description yet." : "This member has not added a bio yet.")}
             </p>
-            {interests.length > 0 && (
+            {!isOrg && interests.length > 0 && (
               <div className="mt-6">
                 <p className="text-sm font-bold text-[#6B7280]">Interests</p>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -399,54 +421,56 @@ export default function PublicProfilePage({
             )}
           </section>
 
-          <section className="rounded-2xl border border-[#E5E7EB] bg-white p-6 sm:p-8">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-extrabold tracking-[-.02em]">
-                Education
-              </h2>
-              {own && (
-                <Link
-                  href="/settings"
-                  aria-label="Edit education"
-                  className="grid h-10 w-10 place-items-center rounded-full hover:bg-[#F8FAFC]"
-                >
-                  <Icon>
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.1 2.1 0 013 3L8 18l-4 1 1-4z" />
-                  </Icon>
-                </Link>
-              )}
-            </div>
-            {profile.university ? (
-              <div className="mt-6 flex gap-4">
-                <span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-700">
-                  <Icon className="h-7 w-7">
-                    <path d="M3 10l9-5 9 5-9 5z" />
-                    <path d="M7 12v5c3 2 7 2 10 0v-5M4 20h16" />
-                  </Icon>
-                </span>
-                <div>
-                  <h3 className="text-lg font-extrabold">
-                    {profile.university}
-                  </h3>
-                  <p className="mt-1 text-base text-[#4B5563]">
-                    {profile.major || "Field of study not specified"}
-                  </p>
-                  {profile.course && (
-                    <p className="mt-1 text-sm text-[#6B7280]">
-                      {profile.course}
-                    </p>
-                  )}
-                </div>
+          {!isOrg && (
+            <section className="rounded-2xl border border-[#E5E7EB] bg-white p-6 sm:p-8">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-extrabold tracking-[-.02em]">
+                  Education
+                </h2>
+                {own && (
+                  <Link
+                    href="/settings"
+                    aria-label="Edit education"
+                    className="grid h-10 w-10 place-items-center rounded-full hover:bg-[#F8FAFC]"
+                  >
+                    <Icon>
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.1 2.1 0 013 3L8 18l-4 1 1-4z" />
+                    </Icon>
+                  </Link>
+                )}
               </div>
-            ) : (
-              <p className="mt-4 text-sm text-[#6B7280]">
-                Education details have not been added yet.
-              </p>
-            )}
-          </section>
+              {userProfile?.university ? (
+                <div className="mt-6 flex gap-4">
+                  <span className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-700">
+                    <Icon className="h-7 w-7">
+                      <path d="M3 10l9-5 9 5-9 5z" />
+                      <path d="M7 12v5c3 2 7 2 10 0v-5M4 20h16" />
+                    </Icon>
+                  </span>
+                  <div>
+                    <h3 className="text-lg font-extrabold">
+                      {userProfile.university}
+                    </h3>
+                    <p className="mt-1 text-base text-[#4B5563]">
+                      {userProfile.major || "Field of study not specified"}
+                    </p>
+                    {userProfile.course && (
+                      <p className="mt-1 text-sm text-[#6B7280]">
+                        {userProfile.course}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-[#6B7280]">
+                  Education details have not been added yet.
+                </p>
+              )}
+            </section>
+          )}
 
-          {skills.length > 0 && (
+          {!isOrg && skills.length > 0 && (
             <section className="rounded-2xl border border-[#E5E7EB] bg-white p-6 sm:p-8">
               <h2 className="text-2xl font-extrabold tracking-[-.02em]">
                 Skills
@@ -469,7 +493,7 @@ export default function PublicProfilePage({
         </div>
 
         <aside className="col-span-12 space-y-6 lg:col-span-4">
-          {own && profile.referralCode && (
+          {!isOrg && own && userProfile?.referralCode && (
             <section className="overflow-hidden rounded-2xl border border-amber-200 bg-gradient-to-br from-[#FFF9E8] to-white p-6">
               <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-extrabold uppercase tracking-[.14em] text-[#9A6700]">
                 Referral rewards
@@ -490,28 +514,31 @@ export default function PublicProfilePage({
               </button>
             </section>
           )}
-          <section className="rounded-2xl border border-[#E5E7EB] bg-white p-6">
-            <h2 className="text-xl font-extrabold">Impact snapshot</h2>
-            <dl className="mt-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <dt className="text-sm text-[#6B7280]">Events joined</dt>
-                <dd className="font-extrabold">{events.length}</dd>
-              </div>
-              <div className="flex items-center justify-between">
-                <dt className="text-sm text-[#6B7280]">Certificates</dt>
-                <dd className="font-extrabold">{certificates.length}</dd>
-              </div>
-              <div className="flex items-center justify-between">
-                <dt className="text-sm text-[#6B7280]">Impact coins</dt>
-                <dd className="font-extrabold text-[#B7791F]">
-                  {profile.weenCoinBalance || 0}
-                </dd>
-              </div>
-            </dl>
-          </section>
+          {!isOrg && (
+            <section className="rounded-2xl border border-[#E5E7EB] bg-white p-6">
+              <h2 className="text-xl font-extrabold">Impact snapshot</h2>
+              <dl className="mt-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <dt className="text-sm text-[#6B7280]">Events joined</dt>
+                  <dd className="font-extrabold">{events.length}</dd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <dt className="text-sm text-[#6B7280]">Certificates</dt>
+                  <dd className="font-extrabold">{certificates.length}</dd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <dt className="text-sm text-[#6B7280]">Impact coins</dt>
+                  <dd className="font-extrabold text-[#B7791F]">
+                    {userProfile?.weenCoinBalance || 0}
+                  </dd>
+                </div>
+              </dl>
+            </section>
+          )}
         </aside>
 
-       <section className="col-span-12 rounded-2xl border border-[#E5E7EB] bg-white p-6 sm:p-8">
+        {!isOrg && (
+          <section className="col-span-12 rounded-2xl border border-[#E5E7EB] bg-white p-6 sm:p-8">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[#E8551B]">
@@ -572,6 +599,7 @@ export default function PublicProfilePage({
             </div>
           )}
         </section>
+        )}
 
         <section className="col-span-12">
           <nav className="flex overflow-x-auto rounded-2xl border border-[#E5E7EB] bg-white p-1.5">
@@ -704,7 +732,7 @@ export default function PublicProfilePage({
         </section>
       </div>
 
-      {referralOpen && profile.referralCode && (
+      {!isOrg && referralOpen && userProfile?.referralCode && (
         <div
           className="fixed inset-0 z-[80] grid place-items-center bg-slate-950/55 p-4 backdrop-blur-sm"
           role="dialog"
@@ -747,7 +775,7 @@ export default function PublicProfilePage({
                 Referral code
               </p>
               <div className="mt-2 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-center text-3xl font-black tracking-[.18em] text-[#8A5B00]">
-                {profile.referralCode}
+                {userProfile.referralCode}
               </div>
               <p className="mt-5 text-xs font-extrabold uppercase tracking-[.16em] text-[#6B7280]">
                 Shareable link
