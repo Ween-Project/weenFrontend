@@ -17,6 +17,7 @@ const icons: Record<string, React.ReactNode> = {
   Admin: <><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z" /><path d="M9 12l2 2 4-4" /></>,
   AI: <><path d="M9.8 12h4.4M12 9.8v4.4" /><circle cx="12" cy="12" r="9" /></>,
   Wallet: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 10h18M16 14h2" /></>,
+  Team: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></>,
 };
 
 const links = [
@@ -27,8 +28,9 @@ const links = [
   { href: "/notifications", label: "Notifications", roles: [] },
   { href: "/ai", label: "AI", roles: ["VOLUNTEER", "ORGANIZER", "ORGANIZATION_ADMIN", "ADMIN"] },
   { href: "/coins", label: "Wallet", roles: ["VOLUNTEER", "ADMIN"] },
-  { href: "/settings", label: "Profile", roles: ["VOLUNTEER", "ORGANIZER", "ADMIN"] },
+  { href: "/settings", label: "Profile", roles: ["VOLUNTEER", "ORGANIZER", "ADMIN", "ORGANIZATION_ADMIN"] },
   { href: "/admin", label: "Admin", roles: ["ADMIN"] },
+  { href: "/dashboard/team", label: "Team", roles: ["ORGANIZATION_ADMIN"] },
 ] as const;
 
 export function Sidebar() {
@@ -109,7 +111,7 @@ export function Sidebar() {
       {!isOrganization && (
         <Link href="/posts" className="mt-7 flex h-12 items-center justify-center rounded-full bg-emerald-600 text-sm font-extrabold text-white shadow-lg shadow-emerald-600/20">Create post</Link>
       )}
-      <Link href={isOrganization ? "/settings" : account?.username ? `/profile/${account.username}` : "/settings"} className="mt-auto flex items-center gap-3 rounded-2xl border border-slate-200 p-3 transition hover:bg-slate-50">
+      <Link href={account?.username ? `/profile/${account.username}` : "/settings"} className="mt-auto flex items-center gap-3 rounded-2xl border border-slate-200 p-3 transition hover:bg-slate-50">
         {account?.profilePhotoUrl || account?.logoUrl ? (
           <img src={account.profilePhotoUrl || account.logoUrl} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" />
         ) : (
@@ -121,15 +123,19 @@ export function Sidebar() {
         </div>
       </Link>
     </aside>
-    <nav className={`fixed inset-x-0 bottom-0 z-50 grid h-[68px] ${isOrganization ? "grid-cols-4" : "grid-cols-5"} items-center border-t border-slate-200 bg-white/95 px-3 backdrop-blur transition-colors lg:hidden`}>
+    <nav className="fixed inset-x-0 bottom-0 z-50 grid h-[68px] grid-cols-5 items-center border-t border-slate-200 bg-white/95 px-3 backdrop-blur transition-colors lg:hidden">
       <MobileLink item={visible.find((item) => item.label === "Home")} pathname={pathname} />
-      <MobileLink item={visible.find((item) => item.label === "Explore")} pathname={pathname} />
-      {!isOrganization && (
+      <MobileLink item={visible.find((item) => item.label === (isOrganization ? "Team" : "Explore"))} pathname={pathname} />
+      {!isOrganization ? (
         <button type="button" onClick={() => setQrOpen(true)} aria-label="Generate QR code" className="mx-auto -mt-5 grid h-16 w-16 place-items-center rounded-full border-[5px] border-[#f7f8fa] bg-emerald-600 text-white shadow-xl shadow-emerald-600/25"><QrIcon large /></button>
+      ) : (
+        <MobileLink item={visible.find((item) => item.label === "Profile")} pathname={pathname} />
       )}
       <MobileLink item={visible.find((item) => item.label === "Messages")} pathname={pathname} unreadCount={unreadMessagesCount} />
       <MobileLink item={visible.find((item) => item.label === "Notifications")} pathname={pathname} hasBadge={hasUnreadNotifications} />
-      <MobileLink item={visible.find((item) => item.label === "Profile")} pathname={pathname} />
+      {!isOrganization && (
+        <MobileLink item={visible.find((item) => item.label === "Profile")} pathname={pathname} />
+      )}
     </nav>
     <QrModal open={qrOpen} onClose={() => setQrOpen(false)} />
   </>;
