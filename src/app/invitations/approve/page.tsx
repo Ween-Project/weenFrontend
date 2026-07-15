@@ -7,7 +7,9 @@ import { toast } from "react-hot-toast";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 
-export default function ApproveInvitationPage() {
+import { Suspense } from "react";
+
+function ApproveContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const router = useRouter();
@@ -81,5 +83,13 @@ export default function ApproveInvitationPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ApproveInvitationPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+      <ApproveContent />
+    </Suspense>
   );
 }

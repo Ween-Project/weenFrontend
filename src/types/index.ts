@@ -120,8 +120,12 @@ export type PostInput = { content: string; mediaUrl?: string };
 export type PostComment = {
   id: string;
   postId: string;
+  parentCommentId?: string;
   author: PostAuthor;
   content: string;
+  likeCount: number;
+  isLikedByMe: boolean;
+  replies?: PostComment[];
   createdAt: string;
   updatedAt: string;
 };
@@ -156,6 +160,11 @@ export type GroupMessage = {
   chatRoomId: string;
   content: string;
   createdAt: string;
+  senderUsername?: string;
+  senderFullName?: string;
+  senderPhotoUrl?: string;
+  replyToMessageId?: string;
+  replyToMessageContent?: string;
 };
 
 export type ChatRoom = {

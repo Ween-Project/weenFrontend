@@ -6,7 +6,9 @@ import { invitationsApi } from "@/lib/api";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 
-export default function RejectInvitationPage() {
+import { Suspense } from "react";
+
+function RejectContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   
@@ -74,12 +76,20 @@ export default function RejectInvitationPage() {
               <h2 className="text-2xl font-black text-slate-900">Oops!</h2>
               <p className="mt-2 text-slate-500">{errorMessage}</p>
               <Link href="/" className="mt-8 block w-full">
-                <Button variant="outline" className="w-full">Return Home</Button>
+                <Button variant="secondary" className="w-full">Return Home</Button>
               </Link>
             </div>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RejectInvitationPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading...</div>}>
+      <RejectContent />
+    </Suspense>
   );
 }

@@ -63,7 +63,7 @@ export function OrganizationSettings({ organizationId }: { organizationId: strin
   useEffect(() => {
     organizationsApi.get(organizationId).then((value) => {
       setOrganization(value);
-      setForm({ organizationName: value.organizationName, email: value.email, description: value.description, website: value.website });
+      setForm({ organizationName: value.organizationName, email: value.email || '', description: value.description, website: value.website });
     }).catch((cause) => setError(errorMessage(cause)));
   }, [organizationId]);
 

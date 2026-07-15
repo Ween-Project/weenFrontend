@@ -16,7 +16,6 @@ import type {
   GroupMessage,
   Notification,
   PublicProfile,
-  OrganizationProfile,
   LeaderboardEntry,
   QrPayload,
   RegistrationInput,
@@ -197,8 +196,10 @@ export const postsApi = {
   save: (id: string, active: boolean) => backend<Post>(`/api/v1/posts/${id}/save`, { method: active ? "DELETE" : "POST" }),
   repost: (id: string, active: boolean) => backend<Post>(`/api/v1/posts/${id}/repost`, { method: active ? "DELETE" : "POST" }),
   comments: (id: string) => backend<Page<PostComment>>(`/api/v1/posts/${id}/comments?size=50`),
-  comment: (id: string, content: string) => backend<PostComment>(`/api/v1/posts/${id}/comments`, { method: "POST", body: JSON.stringify({ content }) }),
+  comment: (id: string, content: string, parentCommentId?: string) => backend<PostComment>(`/api/v1/posts/${id}/comments`, { method: "POST", body: JSON.stringify({ content, parentCommentId }) }),
   deleteComment: (postId: string, commentId: string) => backend<null>(`/api/v1/posts/${postId}/comments/${commentId}`, { method: "DELETE" }),
+  likeComment: (postId: string, commentId: string) => backend<PostComment>(`/api/v1/posts/${postId}/comments/${commentId}/like`, { method: "POST" }),
+  unlikeComment: (postId: string, commentId: string) => backend<PostComment>(`/api/v1/posts/${postId}/comments/${commentId}/like`, { method: "DELETE" }),
 };
 
 export const adminApi = {
@@ -292,10 +293,11 @@ export const chatApi = {
   send: (recipientId: string, content: string) => backend<ChatMessage>("/api/v1/chat/messages", { method: "POST", body: JSON.stringify({ recipientId, content }) }),
   markRead: (partnerId: string) => backend<number>(`/api/v1/chat/messages/${partnerId}/read`, { method: "PUT" }),
   groupMessages: (roomId: string) => backend<Page<GroupMessage>>(`/api/v1/chat/rooms/${roomId}/messages?size=50`),
-  sendGroup: (roomId: string, content: string) => backend<GroupMessage>(`/api/v1/chat/rooms/${roomId}/messages`, { method: "POST", body: JSON.stringify({ content }) }),
+  sendGroup: (roomId: string, content: string, replyToMessageId?: string) => backend<GroupMessage>(`/api/v1/chat/rooms/${roomId}/messages`, { method: "POST", body: JSON.stringify({ content, replyToMessageId }) }),
   createGroup: (name: string, photo?: File) => backend<ChatRoom>("/api/v1/chat/rooms/group", { method: "POST", body: multipart({ name }, [{ name: "photo", file: photo }]) }),
   updateGroup: (roomId: string, name: string, photo?: File) => backend<null>(`/api/v1/chat/rooms/${roomId}`, { method: "PUT", body: multipart({ name }, [{ name: "photo", file: photo }]) }),
   addMember: (roomId: string, username: string) => backend<null>(`/api/v1/chat/rooms/${roomId}/members?username=${encodeURIComponent(username)}`, { method: "POST" }),
+  members: (roomId: string) => backend<UserResponse[]>(`/api/v1/chat/rooms/${roomId}/members`),
   removeMember: (roomId: string, username: string) => backend<null>(`/api/v1/chat/rooms/${roomId}/members/${encodeURIComponent(username)}`, { method: "DELETE" }),
   changeMemberRole: (roomId: string, username: string, role: "ADMIN" | "MEMBER") => backend<null>(`/api/v1/chat/rooms/${roomId}/members/${encodeURIComponent(username)}/role?role=${role}`, { method: "PUT" }),
   leave: (roomId: string) => backend<null>(`/api/v1/chat/rooms/${roomId}/leave`, { method: "DELETE" }),
@@ -345,8 +347,8 @@ export const adminOrganizationsApi = {
 };
 
 export type OrganizationProfile = {
-  id: string; username: string; email: string; organizationName: string; description?: string;
-  logoUrl?: string; bannerUrl?: string; website?: string; isVerified: boolean; role: string;
+  id: string; username: string; email?: string; organizationName: string; description?: string;
+  logoUrl?: string; bannerUrl?: string; website?: string; isVerified?: boolean; role?: string;
 };
 export type OrganizationInput = Pick<OrganizationProfile, "organizationName" | "email"> & Partial<Pick<OrganizationProfile, "description" | "website">>;
 export type OrganizerResponse = {

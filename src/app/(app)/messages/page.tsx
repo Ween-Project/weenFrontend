@@ -7,6 +7,7 @@ import { RoleGuard } from "@/components/RoleGuard";
 import { Alert } from "@/components/ui/Alert";
 import { Loading } from "@/components/ui/Loading";
 import { chatApi, errorMessage, networkApi } from "@/lib/api";
+import { useStomp } from "@/lib/use-stomp";
 import type { ChatConversation, ChatRoom, PublicProfile } from "@/types";
 
 export default function MessagesPage() { return <RoleGuard allow={["VOLUNTEER", "ORGANIZER", "ORGANIZATION_ADMIN", "ADMIN"]}><Messages /></RoleGuard>; }
@@ -23,7 +24,18 @@ function Messages() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => { Promise.all([chatApi.conversations(), chatApi.rooms(), chatApi.requests()]).then(([conversations, groups, requestPage]) => { setItems(conversations); setRooms(groups); setRequests(requestPage.content); }).catch((cause) => setError(errorMessage(cause))).finally(() => setLoading(false)); }, []);
+  const loadData = () => {
+    Promise.all([chatApi.conversations(), chatApi.rooms(), chatApi.requests()])
+      .then(([conversations, groups, requestPage]) => {
+        setItems(conversations);
+        setRooms(groups);
+        setRequests(requestPage.content);
+      })
+      .catch((cause) => setError(errorMessage(cause)))
+      .finally(() => setLoading(false));
+  };
+
+  useStomp("/user/queue/messages", loadData, loadData);
   useEffect(() => {
     if (!compose) return;
     const timer = window.setTimeout(() => networkApi.search(query).then((page) => setPeople(page.content)).catch((cause) => setError(errorMessage(cause))), 250);
