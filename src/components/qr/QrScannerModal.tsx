@@ -106,10 +106,16 @@ export function QrScannerModal({ open, eventId, eventTitle, onClose, onCheckedIn
         scannerRef.current = scanner;
         await scanner.start(
           { facingMode: "environment" },
-          { fps: 10, qrbox: (width, height) => {
-            const size = Math.floor(Math.min(width, height) * 0.72);
-            return { width: size, height: size };
-          } },
+          {
+            fps: 20,
+            qrbox: (width: number, height: number) => {
+              const size = Math.floor(Math.min(width, height) * 0.8);
+              return { width: size, height: size };
+            },
+            experimentalFeatures: {
+              useBarCodeDetectorIfSupported: true,
+            },
+          } as any,
           (decodedText) => void submitToken(decodedText),
           () => undefined,
         );

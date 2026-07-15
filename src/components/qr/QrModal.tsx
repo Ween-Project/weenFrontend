@@ -26,8 +26,8 @@ export function QrModal({
         ? `data:image/png;base64,${result.qrImageBase64}`
         : await QRCode.toDataURL(result.encryptedPayload, {
             width: 320,
-            margin: 2,
-            color: { dark: "#0f172a", light: "#ffffff" },
+            margin: 4,
+            color: { dark: "#000000", light: "#ffffff" },
           });
       setImage(source);
       setSeconds(result.expiresIn || 30);

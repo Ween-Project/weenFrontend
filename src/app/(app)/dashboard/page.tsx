@@ -170,11 +170,7 @@ export default function DashboardPage() {
         
         {/* Feed Filters */}
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between pb-3">
-            <div className="flex items-center gap-2">
-              <img src="/images/filter-icon.png" alt="" className="w-4 h-4 object-contain shrink-0" />
-              <span className="text-sm font-semibold text-slate-500">Filter by: <span className="font-extrabold text-slate-800">Organizations</span></span>
-            </div>
+          <div className="flex items-center justify-end pb-3">
             <div className="relative">
               <button
                 type="button"

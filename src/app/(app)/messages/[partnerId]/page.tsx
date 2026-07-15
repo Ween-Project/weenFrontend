@@ -10,6 +10,15 @@ import { chatApi, errorMessage, networkApi } from "@/lib/api";
 import { useStomp } from "@/lib/use-stomp";
 import type { ChatMessage, PublicProfile } from "@/types";
 
+const POPULAR_EMOJIS = [
+  "😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", "😙", "😚",
+  "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🥸", "🤩", "🥳", "😏", "😒", "😞", "😔", "😟", "😕", "🙁", "☹️",
+  "😣", "😖", "😫", "😩", "🥺", "😢", "😭", "😤", "😠", "😡", "🤬", "🤯", "😳", "🥵", "🥶", "😱", "😨", "😰", "😥", "😓",
+  "🤗", "🤔", "🫣", "🤭", "🤫", "🤥", "😶", "😐", "😑", "😬", "🫨", "🫠", "✍️", "👍", "👎", "👊", "✊", "🤛", "🤜", "🤞",
+  "🤟", "🤘", "👌", "🤌", "🤏", "👈", "👉", "👆", "👇", "☝️", "✋", "🤚", "🖐️", "🖖", "👋", "🤙", "💪", "🙏", "🤝", "👏",
+  "🙌", "👐", "🤲", "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❤️‍🔥", "❤️‍🩹", "✨", "⚡", "🔥", "💥", "🎉"
+];
+
 export default function DirectChatPage({ params }: { params: { partnerId: string } }) {
   return (
     <RoleGuard allow={["VOLUNTEER", "ORGANIZER", "ORGANIZATION_ADMIN", "ADMIN"]}>
@@ -46,6 +55,25 @@ function DirectChat({ partnerId }: { partnerId: string }) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
+
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleEmojiSelect = (emoji: string) => {
+    setInput((prev) => prev + emoji);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
 
   // Load profile of the partner
   useEffect(() => {
@@ -120,14 +148,19 @@ function DirectChat({ partnerId }: { partnerId: string }) {
 
     const content = input.trim();
     setInput("");
+    inputRef.current?.focus();
     setSending(true);
     try {
       const sent = await chatApi.send(partnerId, content);
-      setMessages((current) => [...current, sent]);
+      setMessages((current) => {
+        if (current.some((m) => m.id === sent.id)) return current;
+        return [...current, sent];
+      });
     } catch (cause) {
       setError(errorMessage(cause));
     } finally {
       setSending(false);
+      setTimeout(() => inputRef.current?.focus(), 50);
     }
   }
 
@@ -160,7 +193,7 @@ function DirectChat({ partnerId }: { partnerId: string }) {
               <div className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm leading-6 shadow-sm ${isMe ? "bg-emerald-600 text-white rounded-tr-none" : "bg-white text-slate-800 rounded-tl-none border border-slate-100"}`}>
                 <p className="break-words">{msg.content}</p>
                 <span className={`block mt-1 text-[8px] text-right ${isMe ? "text-emerald-200" : "text-slate-400"}`}>
-                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(msg.createdAt.endsWith("Z") ? msg.createdAt : msg.createdAt + "Z").toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
             </div>
@@ -169,8 +202,36 @@ function DirectChat({ partnerId }: { partnerId: string }) {
         <div ref={endRef} />
       </div>
 
-      <form onSubmit={handleSend} className="flex gap-2 border-t p-3.5 bg-white">
+      <form onSubmit={handleSend} className="flex gap-2 border-t p-3.5 bg-white items-center relative">
+        <div ref={emojiPickerRef} className="relative flex items-center">
+          <button
+            type="button"
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            className="flex h-11 w-11 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-6 h-6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" />
+            </svg>
+          </button>
+          {showEmojiPicker && (
+            <div className="absolute bottom-14 left-0 z-50 h-64 w-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-xl transition-all">
+              <div className="grid grid-cols-8 gap-2">
+                {POPULAR_EMOJIS.map((emoji, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleEmojiSelect(emoji)}
+                    className="flex h-7 w-7 items-center justify-center rounded text-lg hover:bg-slate-100 transition active:scale-95"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
         <input
+          ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Type a message..."
@@ -179,7 +240,7 @@ function DirectChat({ partnerId }: { partnerId: string }) {
         />
         <button
           disabled={!input.trim() || sending}
-          className="rounded-full bg-slate-900 px-5 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50"
+          className="h-11 rounded-full bg-slate-900 px-5 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50"
         >
           Send
         </button>

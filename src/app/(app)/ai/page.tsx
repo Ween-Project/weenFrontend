@@ -1,162 +1,167 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { RoleGuard } from "@/components/RoleGuard";
+import { useAuth } from "@/lib/auth-context";
+import { aiApi, errorMessage } from "@/lib/api";
 import { Alert } from "@/components/ui/Alert";
 import { Loading } from "@/components/ui/Loading";
-import { aiApi, errorMessage, type AiBackendMessage } from "@/lib/api";
 
-type ChatMessage = Pick<AiBackendMessage, "sender" | "content" | "createdAt"> & {
+type Message = {
   id: string;
+  sender: "user" | "ai";
+  content: string;
+  timestamp: Date;
 };
 
-const starterPrompts = [
-  "Help me find volunteer events that match my skills.",
-  "How can I improve my volunteer profile?",
-  "Suggest a message to invite friends to an event.",
-];
-
-export default function AiPage() {
-  return (
-    <RoleGuard allow={["VOLUNTEER", "ORGANIZER", "ORGANIZATION_ADMIN", "ADMIN"]}>
-      <AiChat />
-    </RoleGuard>
-  );
-}
-
-function AiChat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export default function AiAssistantPage() {
+  const { account } = useAuth();
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
-  const [clearing, setClearing] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const endRef = useRef<HTMLDivElement | null>(null);
+  const endRef = useRef<HTMLDivElement>(null);
+  const initializedRef = useRef(false);
 
+  // Load from backend history on mount
   useEffect(() => {
-    aiApi.history()
-      .then((page) => setMessages(page.content))
-      .catch((cause) => setError(errorMessage(cause)))
-      .finally(() => setLoading(false));
+    async function loadHistory() {
+      try {
+        const historyPage = await aiApi.history(0);
+        if (historyPage.content.length > 0) {
+          const formatted = historyPage.content.map((m) => ({
+            id: m.id,
+            sender: m.sender.toLowerCase() as "user" | "ai",
+            content: m.content,
+            timestamp: new Date(m.createdAt),
+          }));
+          setMessages(formatted);
+        } else {
+          setMessages([
+            {
+              id: "welcome",
+              sender: "ai",
+              content: `Hello! I'm your Ween AI assistant. I can help answer questions about community guidelines, reward badges, coin distribution, and how to verify event check-ins. How can I help you today?`,
+              timestamp: new Date(),
+            },
+          ]);
+        }
+      } catch (e) {
+        console.error("Failed to load AI chat history from backend", e);
+        setMessages([
+          {
+            id: "welcome",
+            sender: "ai",
+            content: `Hello! I'm your Ween AI assistant. I can help answer questions about community guidelines, reward badges, coin distribution, and how to verify event check-ins. How can I help you today?`,
+            timestamp: new Date(),
+          },
+        ]);
+      }
+    }
+    void loadHistory();
   }, []);
-
+  
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, sending]);
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-  async function sendMessage(e?: FormEvent, preset?: string) {
-    e?.preventDefault();
-    const content = (preset ?? input).trim();
-    if (!content || sending) return;
+  async function handleSend(e: FormEvent) {
+    e.preventDefault();
+    if (!input.trim() || busy) return;
 
-    const now = new Date().toISOString();
-    const userMessage: ChatMessage = {
-      id: `local-user-${now}`,
-      sender: "USER",
-      content,
-      createdAt: now,
-    };
-
+    const userText = input.trim();
     setInput("");
     setError("");
-    setSending(true);
-    setMessages((current) => [...current, userMessage]);
+    const userMsg: Message = {
+      id: `user-${Date.now()}`,
+      sender: "user",
+      content: userText,
+      timestamp: new Date(),
+    };
+
+    setMessages((current) => [...current, userMsg]);
+    setBusy(true);
 
     try {
-      const reply = await aiApi.chat(content);
-      setMessages((current) => [
-        ...current,
-        {
-          id: `local-ai-${Date.now()}`,
-          sender: "AI",
-          content: reply.response,
-          createdAt: new Date().toISOString(),
-        },
-      ]);
+      const result = await aiApi.chat(userText);
+      const aiMsg: Message = {
+        id: `ai-${Date.now()}`,
+        sender: "ai",
+        content: result.response,
+        timestamp: new Date(),
+      };
+      setMessages((current) => [...current, aiMsg]);
     } catch (cause) {
       setError(errorMessage(cause));
     } finally {
-      setSending(false);
+      setBusy(false);
     }
   }
 
-  async function clearHistory() {
-    setClearing(true);
+  async function handleClear() {
+    if (!confirm("Clear your AI chat history?")) return;
     setError("");
     try {
       await aiApi.clearHistory();
-      setMessages([]);
+      const welcome: Message = {
+        id: "welcome",
+        sender: "ai",
+        content: `Hello! I'm your Ween AI assistant. I can help answer questions about community guidelines, reward badges, coin distribution, and how to verify event check-ins. How can I help you today?`,
+        timestamp: new Date(),
+      };
+      setMessages([welcome]);
     } catch (cause) {
       setError(errorMessage(cause));
-    } finally {
-      setClearing(false);
     }
   }
-
   return (
-    <section className="mx-auto flex min-h-[calc(100vh-8rem)] max-w-5xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <header className="flex flex-col gap-4 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6 dark:border-slate-800">
+    <div className="mx-auto flex h-[calc(100vh-7.5rem)] max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <header className="flex items-center justify-between border-b p-5">
         <div>
-          <p className="text-xs font-black uppercase tracking-[.18em] text-emerald-600">Ween assistant</p>
-          <h1 className="mt-2 text-2xl font-black text-slate-950 dark:text-white">AI chat</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Plan events, sharpen your profile, and get quick volunteering guidance.</p>
+          <h1 className="text-xl font-black flex items-center gap-2">
+            <span className="text-emerald-600">✦</span> Ween AI Assistant
+          </h1>
+          <p className="text-xs text-slate-400">Ask about platform rules, rewards, and your impact</p>
         </div>
         <button
           type="button"
-          onClick={() => void clearHistory()}
-          disabled={clearing || loading || messages.length === 0}
-          className="h-10 rounded-full border border-slate-200 px-4 text-xs font-extrabold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+          onClick={handleClear}
+          className="text-xs font-bold text-slate-500 hover:text-red-600 border border-slate-200 px-3 py-1.5 rounded-full hover:bg-slate-50 transition"
         >
-          {clearing ? "Clearing..." : "Clear chat"}
+          Clear history
         </button>
       </header>
 
-      {error && <div className="p-4"><Alert>{error}</Alert></div>}
+      {error && <div className="p-4 bg-red-50 border-b border-red-100"><Alert>{error}</Alert></div>}
 
-      <div className="flex-1 overflow-y-auto bg-slate-50/70 p-4 dark:bg-slate-950/35 sm:p-6">
-        {loading ? (
-          <Loading label="Loading chat..." />
-        ) : messages.length ? (
-          <div className="space-y-4">
-            {messages.map((message) => (
-              <article key={message.id} className={`flex ${message.sender === "USER" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[82%] rounded-3xl px-4 py-3 text-sm leading-6 shadow-sm sm:max-w-[68%] ${
-                  message.sender === "USER"
-                    ? "bg-emerald-600 text-white"
-                    : "border border-slate-200 bg-white text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                }`}>
-                  <p className="whitespace-pre-wrap">{message.content}</p>
-                  <time className={`mt-2 block text-[10px] font-bold ${message.sender === "USER" ? "text-emerald-50/80" : "text-slate-400"}`}>
-                    {new Date(message.createdAt).toLocaleString()}
-                  </time>
-                </div>
-              </article>
-            ))}
-            {sending && (
-              <div className="flex justify-start">
-                <div className="rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                  Thinking...
+      <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-50/50">
+        {messages.map((msg) => {
+          const isAi = msg.sender === "ai";
+          return (
+            <div key={msg.id} className={`flex ${isAi ? "justify-start" : "justify-end"}`}>
+              <div className={`flex gap-3 max-w-[80%] ${isAi ? "flex-row" : "flex-row-reverse"}`}>
+                <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-bold ${isAi ? "bg-emerald-100 text-emerald-800" : "bg-slate-900 text-white"}`}>
+                  {isAi ? "AI" : (account?.fullName || account?.username || "ME").slice(0, 2).toUpperCase()}
+                </span>
+                <div className={`rounded-2xl px-4 py-2.5 text-sm leading-6 shadow-sm ${isAi ? "bg-white text-slate-800 rounded-tl-none border border-slate-100" : "bg-emerald-600 text-white rounded-tr-none"}`}>
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                  <span className={`block mt-1 text-[9px] text-right ${isAi ? "text-slate-400" : "text-emerald-200"}`}>
+                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
                 </div>
               </div>
-            )}
-          </div>
-        ) : (
-          <div className="grid min-h-[340px] place-items-center text-center">
-            <div className="max-w-md">
-              <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-lg font-black text-emerald-700">AI</div>
-              <h2 className="mt-5 text-xl font-black text-slate-950 dark:text-white">Start a conversation</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">Ask for event ideas, profile feedback, organizer copy, or practical next steps.</p>
-              <div className="mt-5 flex flex-col gap-2">
-                {starterPrompts.map((prompt) => (
-                  <button
-                    key={prompt}
-                    type="button"
-                    onClick={() => void sendMessage(undefined, prompt)}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-                  >
-                    {prompt}
-                  </button>
-                ))}
+            </div>
+          );
+        })}
+        {busy && (
+          <div className="flex justify-start">
+            <div className="flex gap-3 items-center">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-800">AI</span>
+              <div className="rounded-2xl bg-white border border-slate-100 px-4 py-3 shadow-sm rounded-tl-none">
+                <span className="flex items-center gap-1.5 text-xs text-slate-500">
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" />
+                </span>
               </div>
             </div>
           </div>
@@ -164,30 +169,22 @@ function AiChat() {
         <div ref={endRef} />
       </div>
 
-      <form onSubmit={(event) => void sendMessage(event)} className="border-t border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex items-end gap-3">
-          <textarea
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                void sendMessage();
-              }
-            }}
-            rows={2}
-            placeholder="Ask Ween AI..."
-            className="min-h-12 flex-1 resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-          />
-          <button
-            type="submit"
-            disabled={sending || !input.trim()}
-            className="h-12 rounded-full bg-emerald-600 px-6 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Send
-          </button>
-        </div>
+      <form onSubmit={handleSend} className="flex gap-3 border-t p-4 bg-white">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Ask AI anything..."
+          disabled={busy}
+          className="h-12 flex-1 rounded-full bg-slate-100 px-5 text-sm border border-transparent focus:border-slate-200 focus:bg-white focus:outline-none disabled:opacity-50"
+        />
+        <button
+          disabled={!input.trim() || busy}
+          className="rounded-full bg-emerald-600 px-6 font-bold text-sm text-white shadow-md shadow-emerald-600/10 hover:bg-emerald-700 disabled:opacity-50"
+        >
+          Send
+        </button>
       </form>
-    </section>
+    </div>
   );
+
 }
