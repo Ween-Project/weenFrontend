@@ -309,7 +309,16 @@ export const notificationsApi = {
 export const networkApi = {
   leaderboard: (page = 0) => backend<Page<LeaderboardEntry>>(`/api/v1/leaderboard?page=${page}&size=20`),
   search: (query = "", page = 0) => backend<Page<PublicProfile>>(`/api/v1/users/search?query=${encodeURIComponent(query)}&page=${page}&size=20`),
-  profile: (username: string) => backend<PublicProfile>(`/api/v1/users/@${encodeURIComponent(username)}`),
+  profile: async (username: string) => {
+    try {
+      return await backend<PublicProfile>(`/api/v1/users/@${encodeURIComponent(username)}`);
+    } catch (e: any) {
+      if (e.status === 404) {
+        return await backend<PublicProfile>(`/api/v1/organizations/@${encodeURIComponent(username)}`);
+      }
+      throw e;
+    }
+  },
   followers: (userId: string) => backend<Page<PublicProfile>>(`/api/v1/users/${userId}/followers?size=50`),
   following: (userId: string) => backend<Page<PublicProfile>>(`/api/v1/users/${userId}/following?size=50`),
   follow: (userId: string) => backend<null>(`/api/v1/users/${userId}/follow`, { method: "POST" }),
