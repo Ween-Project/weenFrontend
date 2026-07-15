@@ -136,8 +136,7 @@ export default function TeamPage() {
                   </div>
                 </div>
                 <Button
-                  variant="outline"
-                  size="sm"
+                  variant="secondary"
                   disabled={removingId === org.organizerId}
                   onClick={() => handleRemove(org.organizerId)}
                   className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
@@ -171,7 +170,7 @@ export default function TeamPage() {
                 />
               </div>
               <div className="mt-8 flex gap-3">
-                <Button type="button" variant="outline" className="w-full" onClick={() => setIsInviteModalOpen(false)}>Cancel</Button>
+                <Button type="button" variant="secondary" className="w-full" onClick={() => setIsInviteModalOpen(false)}>Cancel</Button>
                 <Button type="submit" className="w-full bg-emerald-600 text-white hover:bg-emerald-700" disabled={inviting || !inviteIdentifier.trim()}>
                   {inviting ? "Sending..." : "Send Invite"}
                 </Button>
