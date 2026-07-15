@@ -275,7 +275,7 @@ export default function PublicProfilePage({
                   <h1 className="text-[28px] font-extrabold leading-tight tracking-[-.02em] sm:text-4xl">
                     {displayName}
                   </h1>
-                  {profile.isEmailVerified && (
+                  {(isOrg ? orgProfile?.isVerified : userProfile?.isEmailVerified) && (
                     <span
                       title="Verified Ween profile"
                       className="grid h-6 w-6 place-items-center rounded-full bg-[#26DE81] text-xs font-black text-white"
