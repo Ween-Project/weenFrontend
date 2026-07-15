@@ -339,11 +339,21 @@ export type OrganizationProfile = {
   logoUrl?: string; bannerUrl?: string; website?: string; isVerified: boolean; role: string;
 };
 export type OrganizationInput = Pick<OrganizationProfile, "organizationName" | "email"> & Partial<Pick<OrganizationProfile, "description" | "website">>;
+export type OrganizerResponse = {
+  organizerId: string;
+  userId: string;
+  fullName: string;
+  email: string;
+  username: string;
+  profilePhotoUrl?: string;
+};
+
 export const organizationsApi = {
   get: (id: string) => backend<OrganizationProfile>(`/api/v1/organizations/${id}`),
   update: (id: string, input: OrganizationInput, logo?: File, banner?: File) =>
     backend<OrganizationProfile>(`/api/v1/organizations/${id}`, { method: "PUT", body: multipart(input, [{ name: "logo", file: logo }, { name: "banner", file: banner }]) }),
   events: () => backend<EventSummary[]>("/api/v1/organizations/current-organization-events"),
+  organizers: (orgId: string) => backend<OrganizerResponse[]>(`/api/v1/organizations/${orgId}/organizers`),
   inviteOrganizer: (orgId: string, emailOrUsername: string) => backend<null>(`/api/v1/organizations/${orgId}/invitations`, { method: "POST", body: JSON.stringify({ emailOrUsername }) }),
   removeOrganizer: (orgId: string, organizerId: string) => backend<null>(`/api/v1/organizations/${orgId}/organizers/${organizerId}`, { method: "DELETE" }),
 };
